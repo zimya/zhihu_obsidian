@@ -18,6 +18,7 @@ import i18n, { type Lang } from "../locales";
 import { EditorView } from "@codemirror/view";
 import { createCookiesEditor } from "./ui/cookies_editor/editor";
 import { createTypstEditor, getTypstVersion } from "./typst";
+import { FolderSuggestModal } from "./utilities";
 
 const locale: Lang = i18n.current;
 
@@ -140,6 +141,31 @@ function UserAgentSetting(
                     }
                 }),
         );
+}
+
+function DefaultSaveFolderSetting(
+    containerEl: HTMLElement,
+    tab: ZhihuSettingTab,
+    folder: string,
+) {
+    const setting = new Setting(containerEl)
+        .setName(locale.settings.defaultSaveDir)
+        .setDesc(locale.settings.defaultSaveDirDesc);
+    setting.nameEl.createEl("code", { text: ` ${folder}` });
+    setting.addButton((btn) =>
+        btn.setButtonText(locale.ui.choose).onClick(() => {
+            new FolderSuggestModal(tab.app, async (selectedFolder) => {
+                try {
+                    await saveSettings(tab.app.vault, {
+                        defaultSaveFolder: selectedFolder.path,
+                    });
+                    tab.display();
+                } catch (e) {
+                    console.error("Failed to set default folder", e);
+                }
+            }).open();
+        }),
+    );
 }
 
 function RestrictToZhihuSetting(
@@ -655,6 +681,8 @@ export class ZhihuSettingTab extends PluginSettingTab {
         AccountSetting(containerEl, this);
         // User Agent设置
         UserAgentSetting(containerEl, this, sts.user_agent);
+        // 默认知乎文章或图片保存位置
+        DefaultSaveFolderSetting(containerEl, this, sts.defaultSaveFolder);
         // 艾特知友功能是否限制在仅在知乎笔记中出发
         RestrictToZhihuSetting(containerEl, this, sts.restrictToZhihuFM);
         // 清除图片缓存设置

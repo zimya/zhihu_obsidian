@@ -22,6 +22,19 @@ export default {
         cancel: "Cancel",
         confirmOpen: "Confirm to open",
         notFound: "Not found",
+        begin: "Begin",
+        batchOpenBtn: "Batch open",
+        overwriteExistingFiles: "Overwrite existing files",
+        saveImages: "Save images",
+        batchOpenTitle: "Batch open Zhihu links",
+        saveDir: "Save directory",
+        choose: "Choose",
+        asbPathHint:
+            "Defaults to your configured directory / (only supports directories within the Vault)",
+        textAreaPlaceHolder:
+            "One link per line.\nSupports Zhihu answers, articles, questions, and Pins.",
+        success: "Success",
+        failed: "Failed",
     },
     notice: {
         notLogin: "You are logout, please login first.",
@@ -99,6 +112,11 @@ export default {
             "Failed to convert Typst image.\n Please check the syntax",
         enterPathInstruction: "Please enter Typst path in settings",
         imgSearchFailed: "cannot find image",
+        overwritingExistingFiles: "Overwriting existing files...",
+        openingFiles: "Opening files...",
+        cookiesExpired: "Cookies expired, refreshing...",
+        cantFindLinks: "Cannot find any links",
+        batchOpenComplete: "Batch open complete: ",
     },
     error: {
         unknownError: "Unknown error",
@@ -128,6 +146,8 @@ export default {
         errorHandlingMermaid: "Error handling Mermaid diagram:",
         detectTypstVersionFailed:
             "Error occurred while detecting Typst version",
+        destFolderEmpty: "Dest folder should not be empty",
+        batchOpenFailed: "Failed to batch open files.",
     },
     settings: {
         accountTitle: "My account",
@@ -139,6 +159,9 @@ export default {
         userAgent: "User agent",
         userAgentDesc: "Custom user agent for Zhihu API requests",
         userAgentPlaceholder: "Enter custom user agent",
+        defaultSaveDir: "Default save directory:",
+        defaultSaveDirDesc:
+            "Set the default save folder for Zhihu content (articles, answers, etc.)",
         restrictAt: "Restrict @Zhihuers to Zhihu frontmatter notes",
         restrictAtDesc:
             "Enable @Zhihuers functionality only for notes with 'zhihu-' frontmatter. (Need to reload plugin once changed)",
