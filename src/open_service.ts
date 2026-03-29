@@ -205,11 +205,11 @@ export class ZhihuOpener {
         parsed: ParsedZhihu,
         opt?: Partial<ResolvedOpenOptions>,
     ): Promise<void> {
+        const settings = await loadSettings(this.app.vault);
         const resolved = {
-            destFolder: opt?.destFolder ?? "zhihu",
-            offlineImages:
-                opt?.offlineImages ??
-                (await loadSettings(this.app.vault)).turnImgOffline,
+            // 默认保存文件夹
+            destFolder: opt?.destFolder ?? settings.defaultSaveFolder,
+            offlineImages: opt?.offlineImages ?? settings.turnImgOffline,
             overwrite: opt?.overwrite ?? true, // 默认覆盖
         };
         await this.saveAndOpen(parsed, resolved);
@@ -240,7 +240,7 @@ export class ZhihuOpener {
             }
 
             // 覆盖：重写内容 + 更新 frontmatter
-            new Notice("正在覆盖已有文件...");
+            new Notice(locale.notice.overwritingExistingFiles);
 
             let markdown = htmlToMd(parsed.html);
             if (opt.offlineImages) {
@@ -266,7 +266,7 @@ export class ZhihuOpener {
         }
 
         // 原逻辑：不存在则创建
-        new Notice("正在打开文件...");
+        new Notice(locale.notice.openingFiles);
         let markdown = htmlToMd(parsed.html);
 
         if (opt.offlineImages) {
@@ -299,9 +299,9 @@ async function resolveOpenOptions(
 ): Promise<ResolvedOpenOptions> {
     const settings = await loadSettings(app.vault);
 
-    const destFolderRaw = (req.destFolder ?? "zhihu").trim();
+    const destFolderRaw = (req.destFolder ?? settings.defaultSaveFolder).trim();
     const destFolder = destFolderRaw.replace(/^\/+|\/+$/g, "");
-    if (!destFolder) throw new Error("destFolder 不能为空");
+    if (!destFolder) throw new Error(locale.error.destFolderEmpty);
 
     const offlineImages = req.offlineImages ?? settings.turnImgOffline;
     const overwrite = req.overwrite ?? true; // 默认覆盖
@@ -403,7 +403,7 @@ async function getZhihuContentHTML(app: App, zhihuLink: string) {
         return await fetchWithCookies();
     } catch (error) {
         console.warn(error);
-        new Notice("cookie 已失效，正在尝试刷新...");
+        new Notice(locale.notice.cookiesExpired);
         try {
             await zhihuRefreshZseCookies(app);
             return await fetchWithCookies();
@@ -656,7 +656,7 @@ export class ZhihuInputLinkModal extends Modal {
 
         // 批量打开链接按钮
         const batchBtn = new ButtonComponent(row);
-        batchBtn.setButtonText("批量打开链接");
+        batchBtn.setButtonText(locale.ui.batchOpenBtn);
         batchBtn.onClick(() => {
             new ZhihuBatchLinkModal(this.app).open();
         });
@@ -666,7 +666,9 @@ export class ZhihuInputLinkModal extends Modal {
         spacer.addClass("open-link-model-spacer");
 
         // 覆盖已有文件
-        const owLabel = row.createSpan({ text: "覆盖已有文件" });
+        const owLabel = row.createSpan({
+            text: locale.ui.overwriteExistingFiles,
+        });
         owLabel.addClass("open-link-model-label");
 
         const owToggle = new ToggleComponent(row);
@@ -676,7 +678,7 @@ export class ZhihuInputLinkModal extends Modal {
         });
 
         // 保存图片
-        const label = row.createSpan({ text: "保存图片" });
+        const label = row.createSpan({ text: locale.ui.saveImages });
         label.addClass("open-link-model-label");
 
         const toggle = new ToggleComponent(row);
@@ -708,7 +710,7 @@ export class ZhihuInputLinkModal extends Modal {
 export class ZhihuBatchLinkModal extends Modal {
     private textareaEl!: HTMLTextAreaElement;
 
-    private folderPathRel = "zhihu"; // vault 内相对路径（真正用于写入）
+    private folderPathRel: string; // vault 内相对路径（真正用于写入）
     private offline = false; // 本次批量开关（覆盖全局）
     private overwrite = true; // 默认覆盖
 
@@ -720,11 +722,12 @@ export class ZhihuBatchLinkModal extends Modal {
         const { contentEl } = this;
         contentEl.empty();
 
-        contentEl.createEl("h2", { text: "批量打开知乎链接" });
+        contentEl.createEl("h2", { text: locale.ui.batchOpenTitle });
 
         // 默认 offline 取全局设置
         const settings = await loadSettings(this.app.vault);
         this.offline = !!settings.turnImgOffline;
+        this.folderPathRel = settings.defaultSaveFolder;
 
         /**
          * =========
@@ -733,7 +736,7 @@ export class ZhihuBatchLinkModal extends Modal {
          */
         const dirRow = contentEl.createDiv({ cls: "zhihu-batch-dir-row" });
         dirRow.addClass("open-link-batch-model-dir");
-        dirRow.createSpan({ text: "存储目录" });
+        dirRow.createSpan({ text: locale.ui.saveDir });
 
         const dirValueEl = dirRow.createSpan({
             text: `${this.folderPathRel}/`,
@@ -745,7 +748,7 @@ export class ZhihuBatchLinkModal extends Modal {
         spacer.addClass("open-link-model-spacer");
 
         const pickBtn = new ButtonComponent(dirRow);
-        pickBtn.setButtonText("选择…");
+        pickBtn.setButtonText(locale.ui.choose);
         pickBtn.onClick(() => {
             // 打开文件夹选择器
             new FolderSuggestModal(this.app, (folder) => {
@@ -760,7 +763,7 @@ export class ZhihuBatchLinkModal extends Modal {
         // 在下面展示绝对路径，便于用户确认
         const absHint = contentEl.createDiv({ cls: "zhihu-batch-abs-hint" });
         absHint.addClass("open-link-batch-model-path-hint");
-        absHint.setText("默认：zhihu/（仅支持 Vault 内目录）");
+        absHint.setText(locale.ui.asbPathHint);
 
         /**
          * =========
@@ -771,7 +774,7 @@ export class ZhihuBatchLinkModal extends Modal {
             cls: "zhihu-batch-offline-row",
         });
         offlineRow.addClass("open-link-batch-model-row");
-        offlineRow.createSpan({ text: "保存图片" });
+        offlineRow.createSpan({ text: locale.ui.saveImages });
 
         const offlineSpacer = offlineRow.createDiv();
         offlineSpacer.addClass("open-link-model-spacer");
@@ -791,7 +794,7 @@ export class ZhihuBatchLinkModal extends Modal {
             cls: "zhihu-batch-overwrite-row",
         });
         overwriteRow.addClass("open-link-batch-model-row");
-        overwriteRow.createSpan({ text: "覆盖已有文件" });
+        overwriteRow.createSpan({ text: locale.ui.overwriteExistingFiles });
 
         const overwriteSpacer = overwriteRow.createDiv();
         overwriteSpacer.addClass("open-link-model-spacer");
@@ -807,8 +810,7 @@ export class ZhihuBatchLinkModal extends Modal {
          */
         this.textareaEl = contentEl.createEl("textarea");
         this.textareaEl.addClass("open-link-batch-model-text-area");
-        this.textareaEl.placeholder =
-            "每行一个链接\n支持知乎回答、文章、问题、想法";
+        this.textareaEl.placeholder = locale.ui.textAreaPlaceHolder;
 
         /**
          * =========
@@ -819,11 +821,11 @@ export class ZhihuBatchLinkModal extends Modal {
         footer.addClass("open-link-batch-model-footer");
 
         const cancelBtn = new ButtonComponent(footer);
-        cancelBtn.setButtonText("取消");
+        cancelBtn.setButtonText(locale.ui.cancel);
         cancelBtn.onClick(() => this.close());
 
         const startBtn = new ButtonComponent(footer);
-        startBtn.setButtonText("开始");
+        startBtn.setButtonText(locale.ui.begin);
         startBtn.setCta();
         startBtn.onClick(async () => {
             await this.runBatch();
@@ -838,7 +840,7 @@ export class ZhihuBatchLinkModal extends Modal {
             .filter((s) => s.length > 0);
 
         if (links.length === 0) {
-            new Notice("没有检测到任何链接");
+            new Notice(locale.notice.cantFindLinks);
             return;
         }
 
@@ -857,12 +859,16 @@ export class ZhihuBatchLinkModal extends Modal {
                 });
                 ok++;
             } catch (e) {
-                console.error("batch open failed:", url, e);
+                console.error(locale.error.batchOpenFailed, url, e);
                 bad++;
             }
         }
 
-        new Notice(`批量处理完成：成功 ${ok}，失败/跳过 ${bad}`);
+        new Notice(
+            `${locale.notice.batchOpenComplete}\n
+${locale.ui.success} ${ok}\n
+${locale.ui.failed} ${bad}`,
+        );
         this.close();
     }
 

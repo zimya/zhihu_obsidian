@@ -5,6 +5,7 @@ import { loadData, updateData } from "./data";
 export interface ZhihuSettings {
     partition: string;
     user_agent: string;
+    defaultSaveFolder: string;
     restrictToZhihuFM: boolean;
     sendReadToZhihu: boolean;
     recommendCount: number;
@@ -29,6 +30,7 @@ const DEFAULT_SETTINGS: ZhihuSettings = {
     partition: "zhihu-login",
     user_agent:
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
+    defaultSaveFolder: "zhihu",
     restrictToZhihuFM: false,
     sendReadToZhihu: true,
     recommendCount: 7,
