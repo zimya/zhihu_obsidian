@@ -403,8 +403,8 @@ async function getZhihuContentHTML(app: App, zhihuLink: string) {
         return await fetchWithCookies();
     } catch (error) {
         console.warn(error);
-        new Notice(locale.notice.cookiesExpired);
         try {
+            //  即使并发调用，也只会生成一个窗口
             await zhihuRefreshZseCookies(app);
             return await fetchWithCookies();
         } catch (error2: any) {
