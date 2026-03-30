@@ -107,7 +107,7 @@ export default {
         imgSearchFailed: "找不到图片",
         overwritingExistingFiles: "正在覆盖已有文件...",
         openingFiles: "正在打开文件...",
-        cookiesExpired: "Cookie 已失效，正在尝试刷新...",
+        refreshCookies: "正在尝试刷新 Cookies...",
         cantFindLinks: "没有检测到任何链接",
         batchOpenComplete: "批量处理完成：",
     },

@@ -114,7 +114,7 @@ export default {
         imgSearchFailed: "cannot find image",
         overwritingExistingFiles: "Overwriting existing files...",
         openingFiles: "Opening files...",
-        cookiesExpired: "Cookies expired, refreshing...",
+        refreshCookies: "Refreshing cookies...",
         cantFindLinks: "Cannot find any links",
         batchOpenComplete: "Batch open complete: ",
     },
