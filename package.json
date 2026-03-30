@@ -3,7 +3,7 @@
         "esbuild": "0.17.3"
     },
     "name": "zhihu-obsidian",
-    "version": "0.3.11",
+    "version": "0.3.12",
     "description": "Enable you to publish your articles and answers to Zhihu",
     "main": "main.js",
     "scripts": {
