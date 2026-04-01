@@ -645,6 +645,23 @@ export async function remarkMdToHTML(app: App, md: string) {
                 children: [u("text", name)],
             };
         },
+        // 如果是卡片链接，那么不需要被p标签包裹，否则在知乎卡片视图下会变成普通链接。
+        paragraph(state: any, node: any): Element | any[] {
+            if (
+                node.children?.length === 1 &&
+                node.children[0]?.type === "link" &&
+                node.children[0]?.title === "card"
+            ) {
+                return state.all(node)[0];
+            }
+
+            return {
+                type: "element",
+                tagName: "p",
+                properties: {},
+                children: state.all(node),
+            };
+        },
     };
     const rehypeOpts: RemarkRehypeOptions = {
         allowDangerousHtml: true,
@@ -656,16 +673,18 @@ export async function remarkMdToHTML(app: App, md: string) {
         .use(mathPlugin) // 解析数学公式
         .use(wikiLinkPlugin) // 解析 Obsidian 风格的图片链接
         .use(remarkCallout) // 解析 Obsidian 风格的 Callout
-        .use(remarkBreaks) // 换行符换行
+        .use(remarkSplitLinesToParagraphs) // 换行符换行
         .use(remarkTypst, app) // 将数学公式转换为 Typst 或者图片节点
         .use(remarkZhihuImgs, app) // 将上面解析的图片节点和维基链接节点转换为知乎图片
         .use(remarkRehype, undefined, rehypeOpts) // 转换其余不需要异步的节点
         .use(rehypeRaw) // 解析 HTML 标签
         // .use(rehypeFormat, { indent: 0 }) // 会导致行内公式被强制换行
+        .use(rehypeRemoveBlockNewlines) // 去除HTML中的换行，避免在知乎网页端编辑的时候会出现大量换行
         .use(rehypeStringify)
         .process(md);
 
     const htmlOutput = String(output);
+    console.log(htmlOutput);
     return htmlOutput;
 }
 // 检测node是否单独一行
@@ -687,4 +706,70 @@ function getLinkText(node: Link): string {
         .filter((child): child is Text => child.type === "text")
         .map((child) => child.value)
         .join("");
+}
+
+// 将remark break替换成如下自定义插件
+// 因为remark break不会将单独一行作为一个p标签，而是会用一个大的p标签包裹，加<br>
+// 但知乎是每一行都是被一个p标签包裹的
+function remarkSplitLinesToParagraphs() {
+    return (tree: any) => {
+        visit(
+            tree,
+            "paragraph",
+            (node: any, index: number | undefined, parent: any) => {
+                if (!parent || index === undefined) return;
+
+                const text = node.children
+                    .map((child: any) => {
+                        if (child.type === "text") return child.value;
+                        if (child.type === "break") return "\n";
+                        return "";
+                    })
+                    .join("");
+
+                const lines = text
+                    .split(/\n+/)
+                    .map((s: string) => s.trim())
+                    .filter(Boolean);
+
+                if (lines.length <= 1) return;
+
+                const newNodes = lines.map((line: string) => ({
+                    type: "paragraph",
+                    children: [{ type: "text", value: line }],
+                }));
+
+                parent.children.splice(index, 1, ...newNodes);
+
+                return index + newNodes.length;
+            },
+        );
+    };
+}
+
+// 去除多余的空行
+function rehypeRemoveBlockNewlines() {
+    return (tree: any) => {
+        visit(tree, (node: any, index: number | undefined, parent: any) => {
+            // 遇到代码块 <pre> 或 <code>，跳过其子节点的遍历，防止破坏代码格式
+            if (
+                node.type === "element" &&
+                (node.tagName === "pre" || node.tagName === "code")
+            ) {
+                return "skip";
+            }
+
+            // 如果当前节点是单纯的换行符文本，且它不是代码块内部的内容，将其删除
+            if (
+                node.type === "text" &&
+                node.value === "\n" &&
+                parent &&
+                index !== undefined
+            ) {
+                parent.children.splice(index, 1);
+                // 返回当前索引，避免因为数组截断导致遍历跳过下一个节点
+                return index;
+            }
+        });
+    };
 }
