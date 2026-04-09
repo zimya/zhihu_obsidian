@@ -50,22 +50,7 @@ export function htmlToMd(html: string): string {
             },
         });
 
-        // 规则 2：带 lang 的 <pre> 转为 ```语言代码块
-        turndownService.addRule("preWithLang", {
-            filter: function (node) {
-                return (
-                    node.nodeName === "PRE" &&
-                    (node as HTMLElement).getAttribute("lang") !== null
-                );
-            },
-            replacement: function (content, node) {
-                const lang = (node as HTMLElement).getAttribute("lang") || "";
-                const code = node.textContent || "";
-                return `\`\`\`${lang}\n${code.trim()}\n\`\`\``;
-            },
-        });
-
-        // 规则 3：将 HTML 表格转换为 Markdown 表格
+        // 规则 2：将 HTML 表格转换为 Markdown 表格
         turndownService.addRule("tableToMarkdown", {
             filter: ["table"],
             replacement: function (content, node) {
@@ -91,7 +76,7 @@ export function htmlToMd(html: string): string {
             },
         });
 
-        // 规则 4：将 <figure> 包含的 <img> 和 <figcaption> 转为 Markdown 图片
+        // 规则 3：将 <figure> 包含的 <img> 和 <figcaption> 转为 Markdown 图片
         turndownService.addRule("figureToImage", {
             filter: ["figure"],
             replacement: function (content, node) {
@@ -104,7 +89,7 @@ export function htmlToMd(html: string): string {
             },
         });
 
-        // 规则 5：忽略 <h*> 标签中的 <br> 标签
+        // 规则 4：忽略 <h*> 标签中的 <br> 标签
         turndownService.addRule("ignoreBrInHeading", {
             filter: function (node, options) {
                 return (
