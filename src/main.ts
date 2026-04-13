@@ -80,7 +80,17 @@ export default class ZhihuObPlugin extends Plugin {
             side.SIDES_VIEW_TYPE,
             (leaf) => new side.ZhihuSideView(leaf, this.app.vault),
         );
-
+        this.addCommand({
+            id: "open-side-view",
+            name: "Open side view",
+            callback: async () => {
+                if (await login.checkIsUserLogin(this.app.vault)) {
+                    side.activateSideView(this.app);
+                } else {
+                    new Notice(loginNoticeStr);
+                }
+            },
+        });
         this.addCommand({
             id: "open-content",
             name: "Open link",
