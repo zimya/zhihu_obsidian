@@ -71,7 +71,6 @@ export async function typstCode2Img(
         pngFile,
     ]);
     const imgData = fs.readFileSync(pngFile);
-    console.log(pngFile);
     const imgArrayBuffer = imgData.buffer.slice(
         imgData.byteOffset,
         imgData.byteOffset + imgData.byteLength,
