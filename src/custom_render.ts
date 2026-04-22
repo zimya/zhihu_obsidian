@@ -184,9 +184,13 @@ async function handleMdImage(
     let alt = node.alt;
     const decodedUrl = decodeURIComponent(node.url ?? "");
 
-    const imgBuffer = isWebUrl(decodedUrl)
-        ? await getOnlineImg(vault, decodedUrl)
-        : fs.readFileSync(await file.getImgPathFromName(app, decodedUrl));
+    let imgBuffer: Buffer;
+
+    if (isWebUrl(decodedUrl)) {
+        imgBuffer = await getOnlineImg(vault, decodedUrl);
+    } else {
+        imgBuffer = await file.getImgBufferFromName(app, decodedUrl);
+    }
 
     if (!alt) {
         alt = settings.useImgNameDefault ? decodedUrl : "";
@@ -213,9 +217,7 @@ async function handleWikiImg(
         alt = settings.useImgNameDefault ? path.basename(imgName) : "";
     }
 
-    const imgPath = await file.getImgPathFromName(app, imgName);
-    const imgBuffer = fs.readFileSync(imgPath);
-
+    const imgBuffer = await file.getImgBufferFromName(app, imgName);
     const imageNode = await bufferToZhihuImageNode(vault, imgBuffer, alt);
 
     replaceNode(parent, index, node, imageNode);

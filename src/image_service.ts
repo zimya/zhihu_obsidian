@@ -292,8 +292,7 @@ export async function uploadCover(app: App, cover: string) {
         return;
     } else {
         const imgName = match[1];
-        const imgLink = await file.getImgPathFromName(app, imgName);
-        const imgBuffer = fs.readFileSync(imgLink);
+        const imgBuffer = await file.getImgBufferFromName(app, imgName);
         const imgRes = await getZhihuImg(app.vault, imgBuffer);
         const imgOriginalPath = imgRes.original_src;
         return imgOriginalPath;
