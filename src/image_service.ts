@@ -1,6 +1,5 @@
 import { Vault, Notice, requestUrl } from "obsidian";
 import * as fs from "fs";
-import * as crypto from "crypto";
 import { fileTypeFromBuffer } from "file-type";
 import * as cookies from "./cookies";
 import * as dataUtil from "./data";
@@ -9,6 +8,7 @@ import { loadSettings } from "./settings";
 import i18n, { type Lang } from "../locales";
 import { App } from "obsidian";
 import sizeOf from "image-size";
+import { md5Hex, hmacSha1Base64 } from "./hash";
 
 const locale: Lang = i18n.current;
 
@@ -57,7 +57,7 @@ function buildOssSignatureString(
 // 更新函数签名
 async function uploadMultipart(
     vault: Vault,
-    imgBuffer: Buffer,
+    imgArrayBuffer: ArrayBuffer,
     uploadToken: any,
     imgHash: string,
     imageId: string,
@@ -124,18 +124,15 @@ async function uploadMultipart(
         // Step 2: 上传分片 (OSS)
         // ==========================================
         const chunkSize = 1024 * 1024; // 1MB
-        const partCount = Math.ceil(imgBuffer.length / chunkSize);
+        const partCount = Math.ceil(imgArrayBuffer.byteLength / chunkSize);
         const partsETags: { partNumber: number; eTag: string }[] = [];
         const partContentType = "application/octet-stream";
 
         for (let i = 0; i < partCount; i++) {
             const partNumber = i + 1;
             const start = i * chunkSize;
-            const end = Math.min(start + chunkSize, imgBuffer.length);
-            const chunkBuffer = imgBuffer.buffer.slice(
-                imgBuffer.byteOffset + start,
-                imgBuffer.byteOffset + end,
-            ) as ArrayBuffer;
+            const end = Math.min(start + chunkSize, imgArrayBuffer.byteLength);
+            const chunkArrayBuffer = imgArrayBuffer.slice(start, end);
 
             const partSubResource = `?partNumber=${partNumber}&uploadId=${uploadId}`;
             const partStringToSign = buildOssSignatureString(
@@ -163,7 +160,7 @@ async function uploadMultipart(
                     "x-oss-security-token": uploadToken.access_token,
                     Authorization: `OSS ${uploadToken.access_id}:${partSignature}`,
                 },
-                body: chunkBuffer,
+                body: chunkArrayBuffer,
             });
 
             if (partRes.status !== 200)
@@ -292,8 +289,8 @@ export async function uploadCover(app: App, cover: string) {
         return;
     } else {
         const imgName = match[1];
-        const imgBuffer = await file.getImgBufferFromName(app, imgName);
-        const imgRes = await getZhihuImg(app.vault, imgBuffer);
+        const imgData = await file.getImgBufferFromName(app, imgName);
+        const imgRes = await getZhihuImg(app.vault, imgData);
         const imgOriginalPath = imgRes.original_src;
         return imgOriginalPath;
     }
@@ -302,27 +299,22 @@ export async function uploadCover(app: App, cover: string) {
 async function uploadImg(
     vault: Vault,
     imgId: string,
-    imgBuffer: Buffer,
+    imgArrayBuffer: ArrayBuffer,
     uploadToken: any,
 ) {
     try {
         const settings = await loadSettings(vault);
-        const imgHash = crypto
-            .createHash("md5")
-            .update(imgBuffer)
-            .digest("hex");
-        const arrayBuffer: ArrayBuffer = imgBuffer.buffer.slice(
-            imgBuffer.byteOffset,
-            imgBuffer.byteOffset + imgBuffer.byteLength,
-        ) as ArrayBuffer;
-        const fileType = await fileTypeFromBuffer(imgBuffer);
+        const imgHash = md5Hex(imgArrayBuffer);
+        const fileType = await fileTypeFromBuffer(
+            new Uint8Array(imgArrayBuffer),
+        );
         if (!fileType) throw new Error(locale.error.recognizeFileTypeFailed);
         const mimeType = fileType?.mime;
         // 如果是 GIF，调用新的分片上传函数，否则 GIF 的体积会膨胀十倍
         if (fileType?.mime === "image/gif") {
             await uploadMultipart(
                 vault,
-                imgBuffer,
+                imgArrayBuffer,
                 uploadToken,
                 imgHash,
                 imgId,
@@ -364,7 +356,7 @@ async function uploadImg(
                 // 'Sec-Fetch-Site': 'cross-site'
             },
             method: "PUT",
-            body: arrayBuffer,
+            body: imgArrayBuffer,
         };
         await requestUrl(request);
         new Notice(`${locale.notice.imageUploadSuccess}`);
@@ -456,11 +448,11 @@ async function pollImgStatus(
 
 export async function getZhihuImg(
     vault: Vault,
-    imgBuffer: Buffer,
+    imgArrayBuffer: ArrayBuffer,
 ): Promise<ImgStatus> {
     const data = await dataUtil.loadData(vault);
     const cache: Record<string, ImgStatus> = data.cache ?? {};
-    const hash = crypto.createHash("md5").update(imgBuffer).digest("hex");
+    const hash = md5Hex(imgArrayBuffer);
 
     if (!cache[hash]) {
         const getImgIdRes = await getImgIdFromHash(vault, hash);
@@ -469,7 +461,7 @@ export async function getZhihuImg(
         const uploadToken = getImgIdRes.upload_token;
 
         if (imgState === 2) {
-            await uploadImg(vault, imgId, imgBuffer, uploadToken);
+            await uploadImg(vault, imgId, imgArrayBuffer, uploadToken);
         }
         // 轮询imgStatus，可以得到img的src和watermark src
         const imgStatus = await pollImgStatus(vault, imgId, hash, 10, 2000);
@@ -508,12 +500,10 @@ export async function getOnlineImg(vault: Vault, url: string) {
             contentType: undefined,
         });
         const arrayBuffer = await response.arrayBuffer;
-        const imgBuffer = Buffer.from(arrayBuffer);
-
-        return imgBuffer;
+        return arrayBuffer;
     } catch (err) {
         new Notice(`failed to fetch image:${err}`);
-        return Buffer.from([]);
+        return new ArrayBuffer(0);
     }
 }
 
@@ -532,16 +522,13 @@ async function calculateSignature(
     accessKeySecret: string,
     stringToSign: string,
 ): Promise<string> {
-    const hmac = crypto.createHmac("sha1", accessKeySecret);
-    hmac.update(stringToSign);
-    const signature = hmac.digest("base64");
-    return signature;
+    return hmacSha1Base64(accessKeySecret, stringToSign);
 }
 
-export function getImgDimensions(imgBuffer: Buffer): {
+export function getImgDimensions(imgArrayBuffer: ArrayBuffer): {
     width: number;
     height: number;
 } {
-    const dimensions = sizeOf(imgBuffer);
+    const dimensions = sizeOf(new Uint8Array(imgArrayBuffer));
     return { width: dimensions.width, height: dimensions.height };
 }

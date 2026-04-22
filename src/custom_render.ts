@@ -27,7 +27,7 @@ import { typst2tex } from "tex2typst";
 import i18n, { type Lang } from "../locales";
 import rehypeRaw from "rehype-raw";
 import { typstCode2Img } from "./typst";
-import { isWebUrl } from "./utilities";
+import { isWebUrl, toArrayBuffer } from "./utilities";
 import { fileTypeFromBuffer } from "file-type";
 import { State } from "mdast-util-to-markdown";
 
@@ -127,17 +127,18 @@ export const remarkZhihuImgs: Plugin<[App], Parent, Parent> = (app) => {
 
 async function bufferToZhihuImageNode(
     vault: Vault,
-    imgBuffer: Buffer,
+    imgArrayBuffer: ArrayBuffer,
     alt: string,
 ): Promise<Image> {
-    const imgRes = await getZhihuImg(vault, imgBuffer);
-    const fileType = await fileTypeFromBuffer(imgBuffer);
+    const imgRes = await getZhihuImg(vault, imgArrayBuffer);
+    const fileType = await fileTypeFromBuffer(new Uint8Array(imgArrayBuffer));
     if (!fileType) {
+        new Notice("无法识别图片类型");
         throw new Error("无法识别图片类型");
     }
 
     const ext = fileType.ext;
-    const { width, height } = getImgDimensions(imgBuffer);
+    const { width, height } = getImgDimensions(imgArrayBuffer);
     const url = `${imgRes.original_src}.${ext}`;
 
     return {
@@ -184,19 +185,19 @@ async function handleMdImage(
     let alt = node.alt;
     const decodedUrl = decodeURIComponent(node.url ?? "");
 
-    let imgBuffer: Buffer;
+    let imgArrayBuffer: ArrayBuffer;
 
     if (isWebUrl(decodedUrl)) {
-        imgBuffer = await getOnlineImg(vault, decodedUrl);
+        imgArrayBuffer = await getOnlineImg(vault, decodedUrl);
     } else {
-        imgBuffer = await file.getImgBufferFromName(app, decodedUrl);
+        imgArrayBuffer = await file.getImgBufferFromName(app, decodedUrl);
     }
 
     if (!alt) {
         alt = settings.useImgNameDefault ? decodedUrl : "";
     }
 
-    const imageNode = await bufferToZhihuImageNode(vault, imgBuffer, alt);
+    const imageNode = await bufferToZhihuImageNode(vault, imgArrayBuffer, alt);
 
     node.url = imageNode.url;
     node.data = imageNode.data;
@@ -217,8 +218,8 @@ async function handleWikiImg(
         alt = settings.useImgNameDefault ? path.basename(imgName) : "";
     }
 
-    const imgBuffer = await file.getImgBufferFromName(app, imgName);
-    const imageNode = await bufferToZhihuImageNode(vault, imgBuffer, alt);
+    const imgData = await file.getImgBufferFromName(app, imgName);
+    const imageNode = await bufferToZhihuImageNode(vault, imgData, alt);
 
     replaceNode(parent, index, node, imageNode);
 }
@@ -239,9 +240,10 @@ async function handleMermaid(
     if (!svgEl) return;
 
     const svg = mermaid.cleanSvg(svgEl.outerHTML);
-    const imgBuffer = await mermaid.svgToPngBuffer(svg, settings.mermaidScale);
+    const imgData = await mermaid.svgToPngBuffer(svg, settings.mermaidScale);
+    const imgArrayBuffer = toArrayBuffer(imgData);
 
-    const imageNode = await bufferToZhihuImageNode(vault, imgBuffer, "");
+    const imageNode = await bufferToZhihuImageNode(vault, imgArrayBuffer, "");
     replaceNode(parent, index, node, imageNode);
 }
 

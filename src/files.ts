@@ -86,7 +86,7 @@ async function getImgFileFromName(
 export async function getImgBufferFromName(
     app: App,
     fileName: string,
-): Promise<Buffer> {
+): Promise<ArrayBuffer> {
     console.log("fileName:", fileName);
     const targetFile = await getImgFileFromName(app, fileName);
     console.log("targetFile:", targetFile);
@@ -96,9 +96,7 @@ export async function getImgBufferFromName(
     const arrayBuffer = await app.vault.readBinary(targetFile);
     console.log("arrayBuffer", arrayBuffer);
     console.log("打印图片的真实字节大小:", arrayBuffer.byteLength);
-    const imgBuffer = Buffer.from(arrayBuffer);
-    console.log("imgBuffer", imgBuffer);
-    return imgBuffer;
+    return arrayBuffer;
 }
 
 /**

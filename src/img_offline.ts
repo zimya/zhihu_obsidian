@@ -4,7 +4,7 @@ import remarkParse from "remark-parse";
 import { visit } from "unist-util-visit";
 import MagicString from "magic-string";
 import { fileTypeFromBuffer } from "file-type";
-import { createHash } from "crypto";
+import { md5Hex } from "./hash";
 
 type MdastImage = {
     type: "image";
@@ -29,11 +29,11 @@ async function ensureFolder(app: App, folderPath: string): Promise<void> {
 
 // 图片基于md5+通过文件内容推断出的后缀名存储
 function md5HexFromArrayBuffer(buf: ArrayBuffer): string {
-    return createHash("md5").update(Buffer.from(buf)).digest("hex");
+    return md5Hex(buf);
 }
 
 async function inferExt(arrayBuffer: ArrayBuffer): Promise<string> {
-    const ft = await fileTypeFromBuffer(Buffer.from(arrayBuffer));
+    const ft = await fileTypeFromBuffer(new Uint8Array(arrayBuffer));
     return ft?.ext ?? "bin";
 }
 

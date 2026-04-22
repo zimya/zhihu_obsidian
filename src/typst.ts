@@ -70,8 +70,13 @@ export async function typstCode2Img(
         typFile,
         pngFile,
     ]);
-    const imgBuffer = fs.readFileSync(pngFile);
-    const imgRes = await getZhihuImg(vault, imgBuffer);
+    const imgData = fs.readFileSync(pngFile);
+    console.log(pngFile);
+    const imgArrayBuffer = imgData.buffer.slice(
+        imgData.byteOffset,
+        imgData.byteOffset + imgData.byteLength,
+    ) as ArrayBuffer;
+    const imgRes = await getZhihuImg(vault, imgArrayBuffer);
     const imgLink = imgRes.original_src;
     await rm(tmpDir, { recursive: true, force: true }); // 清理临时文件夹
     return imgLink;
