@@ -16,7 +16,7 @@ import * as login from "./login_service";
 import { loadData, deleteData } from "./data";
 import i18n, { type Lang } from "../locales";
 import { EditorView } from "@codemirror/view";
-import { createCookiesEditor } from "./ui/cookies_editor/editor";
+import { createCookiesEditor } from "./cookies_editor/editor";
 import { createTypstEditor, getTypstVersion } from "./typst";
 import { FolderSuggestModal } from "./utilities";
 

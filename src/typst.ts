@@ -1,5 +1,5 @@
 import { Vault, PluginSettingTab, Setting } from "obsidian";
-import { basicSetup } from "./ui/cookies_editor/extensions";
+import { basicSetup } from "./cookies_editor/extensions";
 import { EditorState } from "@codemirror/state";
 import { EditorView, ViewUpdate } from "@codemirror/view";
 import { loadSettings, saveSettings } from "./settings";
