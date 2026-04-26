@@ -25,6 +25,7 @@ function getWebviewerInstance(app: App): any {
     return plugin.instance;
 }
 
+// 引导用户开启网页浏览器
 function showEnableWebviewerModal(app: App): void {
     const language = (window.localStorage.getItem("language") ?? "en").toLowerCase();
     const webviewerKeywordMap: Record<string, string> = {
