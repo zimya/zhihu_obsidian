@@ -109,6 +109,8 @@ export default {
         mobileRefreshCookieInDesktop: "手机端不支持刷新cookie，请在桌面端操作",
         cantFindLinks: "没有检测到任何链接",
         batchOpenComplete: "批量处理完成：",
+        mobileIncompatible: "该功能与手机不兼容",
+        enableWebviewerFirst: "请先启用 Obsidian 核心插件：网页浏览器",
     },
     error: {
         unknownError: "未知错误",
@@ -139,7 +141,6 @@ export default {
         detectTypstVersionFailed: "检测 Typst 版本时出错",
         destFolderEmpty: "Dest 目录不能为空",
         batchOpenFailed: "批量打开链接失败.",
-        mobileIncompatible: "该功能与手机不兼容",
         waitWebviewerOpenTimeout: "等待 Web viewer 打开超时",
         waitWebviewInitTimeout: "等待 Web viewer 初始化 webview 超时",
         waitWebviewDomReadyTimeout: "等待 Web viewer dom-ready 超时",
@@ -147,7 +148,6 @@ export default {
         cannotGetWebviewWebContentsId: "无法获取 webview 的 WebContents ID",
         cannotGetWebviewerSession: "无法获取 Web viewer 的 session",
         waitLoginAndExtractCookiesTimeout: "等待登录完成并提取 Cookie 超时",
-        enableWebviewerFirst: "请先启用 Obsidian 核心插件：Web viewer",
     },
     settings: {
         accountTitle: "我的账户",
@@ -157,6 +157,9 @@ export default {
         refreshLoginButtonText: "刷新登录状态",
         clearLogin: "清除登录信息",
         clearLoginSuccess: "清除登录信息成功，请重新登录",
+        enableWebviewerWarning:
+            "## 未启用网页浏览器。\n\n请前往 **设置 -> 核心插件**，启用**网页浏览器**后再继续。",
+        enableWebviewerButton: "前往启用",
         userAgent: "用户代理",
         userAgentDesc: "在知乎API请求中自定义用户代理",
         userAgentPlaceholder: "请输入自定义用户代理",

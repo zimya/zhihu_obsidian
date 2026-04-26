@@ -110,6 +110,7 @@ export default {
         cantFindLinks: "沒有偵測到任何連結",
         batchOpenComplete: "批量處理完成：",
         mobileIncompatible: "該功能與手機不相容",
+        enableWebviewerFirst: "請先啟用 Obsidian 核心外掛：網頁檢視器",
     },
     error: {
         unknownError: "未知錯誤",
@@ -147,7 +148,6 @@ export default {
         cannotGetWebviewWebContentsId: "無法取得 webview 的 WebContents ID",
         cannotGetWebviewerSession: "無法取得 Web viewer 的 session",
         waitLoginAndExtractCookiesTimeout: "等待登入完成並提取 Cookie 逾時",
-        enableWebviewerFirst: "請先啟用 Obsidian 核心外掛：Web viewer",
     },
     settings: {
         accountTitle: "我的帳戶",
@@ -157,6 +157,9 @@ export default {
         refreshLoginButtonText: "刷新登入狀態",
         clearLogin: "清除登录信息",
         clearLoginSuccess: "清除登入資訊成功，請重新登入",
+        enableWebviewerWarning:
+            "## 尚未啟用網頁檢視器。\n\n請前往 **設定 -> 核心外掛程式**，啟用**網頁檢視器**後再繼續。",
+        enableWebviewerButton: "前往啟用",
         userAgent: "使用者代理",
         userAgentDesc: "在知乎 API 請求中自訂使用者代理",
         userAgentPlaceholder: "請輸入自訂使用者代理",

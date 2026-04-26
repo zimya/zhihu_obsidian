@@ -3,15 +3,11 @@ import {
     PluginSettingTab,
     Setting,
     Notice,
-    ButtonComponent,
-    Modal,
-    MarkdownRenderer,
-    Component,
     Vault,
     ToggleComponent,
 } from "obsidian";
 import ZhihuObPlugin from "./main";
-import { loadSettings, saveSettings } from "./settings";
+import { ConfirmationModal, loadSettings, saveSettings } from "./settings";
 import * as login from "./login_service";
 import { loadData, deleteData } from "./data";
 import i18n, { type Lang } from "../locales";
@@ -31,10 +27,10 @@ async function fetchUserStatus(vault: Vault) {
         isLoggedIn: true,
         userInfo: data?.userInfo
             ? {
-                  avatar_url: data.userInfo.avatar_url,
-                  name: data.userInfo.name,
-                  headline: data.userInfo.headline,
-              }
+                avatar_url: data.userInfo.avatar_url,
+                name: data.userInfo.name,
+                headline: data.userInfo.headline,
+            }
             : null,
     };
 }
@@ -753,41 +749,5 @@ export class ZhihuSettingTab extends PluginSettingTab {
         // Typst 的公式样式设置，包含一个 Typst 编辑器
         const typstEditor = TypstEditor(this, containerEl, sts.typstMode);
         createTypstEditor(this, typstEditor, sts.typstPresetStyle);
-    }
-}
-
-export class ConfirmationModal extends Modal {
-    constructor(
-        app: App,
-        bodyMarkdown: string,
-        buttonCallback: (button: ButtonComponent) => void,
-        clickCallback: () => Promise<void>,
-    ) {
-        super(app);
-        this.contentEl.addClass("zhihu-obsidian-confirmation-modal");
-        const contentDiv = this.contentEl.createDiv();
-        const component = new (class extends Component {})();
-
-        MarkdownRenderer.render(
-            this.app,
-            bodyMarkdown,
-            contentDiv,
-            "", // sourcePath 通常留空
-            component, // 将 modal 实例自身作为 Component 传入
-        );
-
-        new Setting(this.contentEl)
-            .addButton((button) => {
-                buttonCallback(button);
-                button.onClick(async () => {
-                    await clickCallback();
-                    this.close();
-                });
-            })
-            .addButton((button) =>
-                button
-                    .setButtonText(locale.ui.cancel)
-                    .onClick(() => this.close()),
-            );
     }
 }

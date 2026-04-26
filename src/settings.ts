@@ -1,5 +1,16 @@
-import { Vault } from "obsidian";
+import {
+    App,
+    ButtonComponent,
+    Component,
+    MarkdownRenderer,
+    Modal,
+    Setting,
+    Vault,
+} from "obsidian";
 import { loadData, updateData } from "./data";
+import i18n, { type Lang } from "../locales";
+
+const locale: Lang = i18n.current;
 
 // Define the structure of the settings
 export interface ZhihuSettings {
@@ -81,5 +92,35 @@ export async function saveSettings(
     } catch (e) {
         console.error("Error saving settings:", e);
         throw e;
+    }
+}
+
+export class ConfirmationModal extends Modal {
+    constructor(
+        app: App,
+        bodyMarkdown: string,
+        buttonCallback: (button: ButtonComponent) => void,
+        clickCallback: () => Promise<void>,
+    ) {
+        super(app);
+        this.contentEl.addClass("zhihu-obsidian-confirmation-modal");
+        const contentDiv = this.contentEl.createDiv();
+        const component = new (class extends Component { })();
+
+        MarkdownRenderer.render(this.app, bodyMarkdown, contentDiv, "", component);
+
+        new Setting(this.contentEl)
+            .addButton((button: ButtonComponent) => {
+                buttonCallback(button);
+                button.onClick(async () => {
+                    await clickCallback();
+                    this.close();
+                });
+            })
+            .addButton((button: ButtonComponent) =>
+                button
+                    .setButtonText(locale.ui.cancel)
+                    .onClick(() => this.close()),
+            );
     }
 }

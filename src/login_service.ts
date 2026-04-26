@@ -1,6 +1,7 @@
 import { App, Vault, Notice, Platform, requestUrl } from "obsidian";
 import * as dataUtil from "./data";
 import * as cookieUtil from "./cookies";
+import { ConfirmationModal } from "./settings";
 import { loadSettings } from "./settings";
 import i18n, { type Lang } from "../locales";
 const locale: Lang = i18n.current;
@@ -22,6 +23,60 @@ function getWebviewerInstance(app: App): any {
         return null;
     }
     return plugin.instance;
+}
+
+function showEnableWebviewerModal(app: App): void {
+    const language = (window.localStorage.getItem("language") ?? "en").toLowerCase();
+    const webviewerKeywordMap: Record<string, string> = {
+        "zh": "网页浏览器",
+        "zh-tw": "網頁檢視器",
+    };
+    const webviewerKeyword = webviewerKeywordMap[language] ?? "web viewer";
+
+    new ConfirmationModal(
+        app,
+        locale.settings.enableWebviewerWarning,
+        (button) => {
+            button
+                .setButtonText(locale.settings.enableWebviewerButton)
+                .setCta();
+        },
+        async () => {
+            const setting = (app as any).setting;
+            setting?.open?.();
+
+            (app as any).commands?.executeCommandById?.("app:open-settings");
+            window.setTimeout(() => {
+                const tabEls = Array.from(
+                    document.querySelectorAll<HTMLElement>(
+                        ".vertical-tab-nav-item",
+                    ),
+                );
+                const target = tabEls.find((el) => {
+                    const id = (
+                        el.getAttribute("data-setting-id") ?? ""
+                    ).toLowerCase();
+                    return id.includes("plugins");
+                });
+                target?.click();
+
+                window.setTimeout(() => {
+                    const searchInput = document.querySelector<HTMLInputElement>(
+                        '.setting-group-search input[type="search"]',
+                    );
+                    if (!searchInput) return;
+                    searchInput.focus();
+                    searchInput.value = webviewerKeyword;
+                    searchInput.dispatchEvent(
+                        new Event("input", { bubbles: true }),
+                    );
+                    searchInput.dispatchEvent(
+                        new Event("change", { bubbles: true }),
+                    );
+                }, 120);
+            }, 120);
+        },
+    ).open();
 }
 
 async function waitForWebviewerLeaf(
@@ -290,7 +345,8 @@ async function extractZhihuCookiesViaWebviewer(
 ): Promise<Record<string, string>> {
     const webviewer = getWebviewerInstance(app);
     if (!webviewer) {
-        throw new Error(locale.error.enableWebviewerFirst);
+        showEnableWebviewerModal(app);
+        throw new Error(locale.notice.enableWebviewerFirst);
     }
 
     const leavesBeforeOpen = new Set(
@@ -330,7 +386,8 @@ export async function zhihuWebLogin(app: App): Promise<void> {
 export async function zhihuClearLoginInfo(app: App): Promise<void> {
     const webviewer = getWebviewerInstance(app);
     if (!webviewer) {
-        throw new Error(locale.error.enableWebviewerFirst);
+        showEnableWebviewerModal(app);
+        throw new Error(locale.notice.enableWebviewerFirst);
     }
 
     const leavesBeforeOpen = new Set(

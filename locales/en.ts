@@ -118,6 +118,8 @@ export default {
         cantFindLinks: "Cannot find any links",
         batchOpenComplete: "Batch open complete: ",
         mobileIncompatible: "Mobile device incompatible.",
+        enableWebviewerFirst:
+            "Please enable Obsidian core plugin: Web viewer first",
     },
     error: {
         unknownError: "Unknown error",
@@ -159,8 +161,6 @@ export default {
         cannotGetWebviewerSession: "Cannot get Web viewer session",
         waitLoginAndExtractCookiesTimeout:
             "Timed out waiting for login and cookie extraction",
-        enableWebviewerFirst:
-            "Please enable Obsidian core plugin: Web viewer first",
     },
     settings: {
         accountTitle: "My account",
@@ -170,6 +170,9 @@ export default {
         refreshLoginButtonText: "Refresh Login Status",
         clearLogin: "Clear login",
         clearLoginSuccess: "Login cleared successfully,\n Please login again.",
+        enableWebviewerWarning:
+            "## Web viewer is disabled.\n\nPlease go to **Settings -> Core plugins**, then enable **Web viewer** to continue.",
+        enableWebviewerButton: "Go enable",
         userAgent: "User agent",
         userAgentDesc: "Custom user agent for Zhihu API requests",
         userAgentPlaceholder: "Enter custom user agent",
