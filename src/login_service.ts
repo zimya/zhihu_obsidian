@@ -1,106 +1,323 @@
-import { App, Vault, Notice, requestUrl } from "obsidian";
+import { App, Vault, Notice, Platform, requestUrl } from "obsidian";
 import * as dataUtil from "./data";
 import * as cookieUtil from "./cookies";
-import { loadSettings, saveSettings } from "./settings";
+import { loadSettings } from "./settings";
 import i18n, { type Lang } from "../locales";
 const locale: Lang = i18n.current;
 
 const ZHIHU_EXAMPLE_QUESTION_URL = "https://www.zhihu.com/question/19550225";
 const ZHIHU_LOGIN_URL = "https://www.zhihu.com/signin";
+const WEBVIEWER_PLUGIN_ID = "webviewer";
+const WEBVIEWER_VIEW_TYPE = "webviewer";
+const WAIT_TIMEOUT_MS = 120000;
 
-/**
- * 核心模块：通用 Zhihu Cookie 提取器
- * 负责创建 Electron 窗口、管理 session 分区、监听页面加载并提取所需 Cookie
- */
-async function extractZhihuCookiesViaWindow(
-    partition: string,
-    windowOptions: { width: number; height: number },
-    initialUrl: string,
-    isLoginFlow: boolean,
-): Promise<Record<string, string>> {
-    const remote = window.require("@electron/remote");
-    const { BrowserWindow, session } = remote;
+function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
 
-    // 为无痕登录窗创建独立的非持久分区
-    // 非持久化，会在窗口全关后销毁
-    const ses = session.fromPartition(partition);
+function getWebviewerInstance(app: App): any {
+    const internalPlugins = (app as any).internalPlugins;
+    const plugin = internalPlugins?.getPluginById?.(WEBVIEWER_PLUGIN_ID);
+    if (!plugin?.enabled || !plugin?.instance) {
+        return null;
+    }
+    return plugin.instance;
+}
 
-    // 只清理这个分区，避免：
-    // DOMException: Failed to execute 'transaction' on 'IDBDatabase':
-    // The database connection is closing.
-    await ses.clearStorageData({
-        origin: "https://www.zhihu.com",
-        storages: ["cookies", "localstorage", "serviceworkers", "cachestorage"],
-    });
+async function waitForWebviewerLeaf(
+    app: App,
+    leavesBeforeOpen: Set<any>,
+): Promise<any> {
+    const startAt = Date.now();
+    while (Date.now() - startAt < WAIT_TIMEOUT_MS) {
+        const leaves = app.workspace.getLeavesOfType(
+            WEBVIEWER_VIEW_TYPE as any,
+        );
+        const newLeaf = leaves.find((leaf: any) => !leavesBeforeOpen.has(leaf));
+        if (newLeaf) {
+            return newLeaf;
+        }
+        if (leaves.length > 0) {
+            return leaves[leaves.length - 1];
+        }
+        await sleep(100);
+    }
+    throw new Error(locale.error.waitWebviewerOpenTimeout);
+}
 
-    return new Promise<Record<string, string>>((resolve, reject) => {
-        const win = new BrowserWindow({
-            width: windowOptions.width,
-            height: windowOptions.height,
-            webPreferences: {
-                nodeIntegration: false,
-                contextIsolation: true,
-                partition,
-            },
-        });
+async function waitForWebviewEl(leaf: any): Promise<any> {
+    const startAt = Date.now();
+    while (Date.now() - startAt < WAIT_TIMEOUT_MS) {
+        const webviewEl = leaf?.view?.contentEl?.querySelector?.("webview");
+        if (webviewEl) {
+            return webviewEl;
+        }
+        await sleep(100);
+    }
+    throw new Error(locale.error.waitWebviewInitTimeout);
+}
 
-        win.loadURL(initialUrl).catch(reject);
+async function waitForWebviewDomReady(webviewEl: any): Promise<void> {
+    const canUseWebContents = () => {
+        try {
+            return Boolean(webviewEl?.getWebContentsId?.());
+        } catch {
+            return false;
+        }
+    };
 
-        win.webContents.on("did-finish-load", async () => {
-            try {
-                const url = win.webContents.getURL();
+    if (canUseWebContents()) {
+        return;
+    }
 
-                // 仅在登录流程下，如果重定向到了首页，则跳转到示例问题页
-                if (isLoginFlow && url === "https://www.zhihu.com/") {
-                    await win.loadURL(ZHIHU_EXAMPLE_QUESTION_URL);
-                    return;
-                }
+    await new Promise<void>((resolve, reject) => {
+        const timer = window.setTimeout(() => {
+            cleanup();
+            reject(new Error(locale.error.waitWebviewDomReadyTimeout));
+        }, WAIT_TIMEOUT_MS);
 
-                if (url.startsWith(ZHIHU_EXAMPLE_QUESTION_URL)) {
-                    // 从“无痕分区”的 cookies 取值
-                    // 此时只会有三个cookie：_xsrf、BEC、__zse_ck (刷新时)
-                    // 最重要的是__zse_ck cookie
-                    const cookies = await ses.cookies.get({
-                        url: "https://www.zhihu.com",
-                    });
-                    const zse = cookies.find((c: any) => c.name === "__zse_ck");
-                    if (!zse) {
-                        new Notice(`${locale.notice.zseckFetchFailed}`);
-                        return;
-                    }
+        const cleanup = () => {
+            window.clearTimeout(timer);
+            webviewEl.removeEventListener("dom-ready", onDomReady);
+        };
 
-                    // 将获取的 cookie 转换成 JSON 形式
-                    const cookieObj: Record<string, string> = {};
-                    cookies.forEach((c: { name: string; value: string }) => {
-                        cookieObj[c.name] = c.value;
-                    });
+        const onDomReady = () => {
+            cleanup();
+            resolve();
+        };
 
-                    win.close();
-                    resolve(cookieObj);
-                }
-            } catch (e) {
-                reject(e);
-            }
-        });
-
-        win.on("closed", () => reject(new Error("用户关闭了登录窗口")));
+        webviewEl.addEventListener("dom-ready", onDomReady, { once: true });
     });
 }
 
-export async function zhihuWebLogin(app: App, isNew = false): Promise<void> {
-    const vault = app.vault;
-    const settings = await loadSettings(vault);
+function getZhihuSessionFromWebview(webviewEl: any): any {
+    const remote = (window as any).require?.("@electron/remote");
+    const webContents = remote?.webContents;
+    if (!webContents) {
+        throw new Error(locale.error.cannotAccessElectronWebContents);
+    }
+    const webContentsId = webviewEl?.getWebContentsId?.();
+    if (!webContentsId) {
+        throw new Error(locale.error.cannotGetWebviewWebContentsId);
+    }
+    const wc = webContents.fromId(webContentsId);
+    if (!wc?.session) {
+        throw new Error(locale.error.cannotGetWebviewerSession);
+    }
+    return wc.session;
+}
 
-    // 如果是新的登录窗口，则创建一个新分区，否则使用已有的，已经登录账号的分区。
-    const newPartition = `zhihu-login-${new Date().getTime()}`;
-    const partition = isNew ? newPartition : settings.partition;
+function isIgnorableNavigationError(error: unknown): boolean {
+    const message =
+        error instanceof Error ? error.message : String(error ?? "");
+    return message.includes("(-3)") || message.includes("ERR_ABORTED");
+}
+
+function normalizeCookiePath(path: string | undefined): string {
+    if (!path || path === "") {
+        return "/";
+    }
+    return path.startsWith("/") ? path : `/${path}`;
+}
+
+function buildCookieRemovalUrl(cookie: any): string | null {
+    const domain = String(cookie?.domain ?? "").replace(/^\./, "");
+    if (!domain) {
+        return null;
+    }
+    const protocol = cookie?.secure ? "https" : "http";
+    const path = normalizeCookiePath(cookie?.path);
+    return `${protocol}://${domain}${path}`;
+}
+
+async function clearZhihuSessionData(webviewEl: any): Promise<void> {
+    const ses = getZhihuSessionFromWebview(webviewEl);
+
+    const cookieCandidates: any[] = [];
+    for (const url of ["https://www.zhihu.com", "https://zhihu.com"]) {
+        const cookies = await ses.cookies.get({ url });
+        cookieCandidates.push(...cookies);
+    }
+
+    const uniqueCookies = new Map<string, any>();
+    cookieCandidates.forEach((cookie) => {
+        const key = [
+            String(cookie?.domain ?? ""),
+            String(cookie?.path ?? ""),
+            String(cookie?.name ?? ""),
+            String(cookie?.secure ?? ""),
+        ].join("|");
+        uniqueCookies.set(key, cookie);
+    });
+
+    const removeTasks: Promise<void>[] = [];
+    uniqueCookies.forEach((cookie) => {
+        const url = buildCookieRemovalUrl(cookie);
+        if (!url || !cookie?.name) {
+            return;
+        }
+        removeTasks.push(ses.cookies.remove(url, cookie.name));
+    });
+    await Promise.allSettled(removeTasks);
+
+    const clearStorageTasks = [
+        ses.clearStorageData({
+            origin: "https://www.zhihu.com",
+            storages: [
+                "cookies",
+                "localstorage",
+                "serviceworkers",
+                "cachestorage",
+            ],
+        }),
+        ses.clearStorageData({
+            origin: "https://zhihu.com",
+            storages: [
+                "cookies",
+                "localstorage",
+                "serviceworkers",
+                "cachestorage",
+            ],
+        }),
+    ];
+    await Promise.allSettled(clearStorageTasks);
+}
+
+async function extractCookiesAfterNavigation(
+    webviewEl: any,
+    isLoginFlow: boolean,
+): Promise<Record<string, string>> {
+    return new Promise<Record<string, string>>((resolve, reject) => {
+        let finished = false;
+        let pollingTimer: number | null = null;
+        const timer = window.setTimeout(() => {
+            cleanup();
+            reject(new Error(locale.error.waitLoginAndExtractCookiesTimeout));
+        }, WAIT_TIMEOUT_MS);
+
+        const cleanup = () => {
+            window.clearTimeout(timer);
+            if (pollingTimer !== null) {
+                window.clearInterval(pollingTimer);
+                pollingTimer = null;
+            }
+            webviewEl.removeEventListener("did-finish-load", onLoad);
+            webviewEl.removeEventListener("did-navigate", onLoad);
+            webviewEl.removeEventListener("did-navigate-in-page", onLoad);
+        };
+
+        const finishWithError = (error: unknown) => {
+            if (finished) return;
+            finished = true;
+            cleanup();
+            reject(error);
+        };
+
+        const finishWithCookies = (cookies: Record<string, string>) => {
+            if (finished) return;
+            finished = true;
+            cleanup();
+            resolve(cookies);
+        };
+
+        const tryExtractCookies = async () => {
+            const ses = getZhihuSessionFromWebview(webviewEl);
+            const cookies = await ses.cookies.get({
+                url: "https://www.zhihu.com",
+            });
+            const zse = cookies.find((c: any) => c.name === "__zse_ck");
+            if (!zse) {
+                return;
+            }
+
+            const cookieObj: Record<string, string> = {};
+            cookies.forEach((c: { name: string; value: string }) => {
+                cookieObj[c.name] = c.value;
+            });
+            finishWithCookies(cookieObj);
+        };
+
+        const onLoad = async () => {
+            try {
+                const url = webviewEl.getURL?.() ?? "";
+
+                if (isLoginFlow && url === "https://www.zhihu.com/") {
+                    // 登录后的重定向与主动跳转可能互相中断，忽略 -3/ERR_ABORTED
+                    await webviewEl
+                        .loadURL(ZHIHU_EXAMPLE_QUESTION_URL)
+                        .catch((error: unknown) => {
+                            if (!isIgnorableNavigationError(error)) {
+                                throw error;
+                            }
+                        });
+                    return;
+                }
+
+                if (!url.startsWith(ZHIHU_EXAMPLE_QUESTION_URL)) {
+                    return;
+                }
+
+                await tryExtractCookies();
+                if (!finished && pollingTimer === null) {
+                    // 某些情况下 __zse_ck 会晚于页面加载事件写入，这里短轮询等待
+                    pollingTimer = window.setInterval(() => {
+                        if (finished) return;
+                        void tryExtractCookies().catch(finishWithError);
+                    }, 800);
+                }
+            } catch (error) {
+                if (isIgnorableNavigationError(error)) {
+                    return;
+                }
+                finishWithError(error);
+            }
+        };
+
+        webviewEl.addEventListener("did-finish-load", onLoad);
+        webviewEl.addEventListener("did-navigate", onLoad);
+        webviewEl.addEventListener("did-navigate-in-page", onLoad);
+    });
+}
+
+/**
+ * 核心模块：通用 Zhihu Cookie 提取器（基于 Obsidian Web viewer）
+ * 打开 Web viewer 页签、监听页面状态并提取所需 Cookie
+ */
+async function extractZhihuCookiesViaWebviewer(
+    app: App,
+    initialUrl: string,
+    isLoginFlow: boolean,
+): Promise<Record<string, string>> {
+    const webviewer = getWebviewerInstance(app);
+    if (!webviewer) {
+        throw new Error(locale.error.enableWebviewerFirst);
+    }
+
+    const leavesBeforeOpen = new Set(
+        app.workspace.getLeavesOfType(WEBVIEWER_VIEW_TYPE as any),
+    );
+
+    webviewer.openUrl(initialUrl, true, true);
+
+    const leaf = await waitForWebviewerLeaf(app, leavesBeforeOpen);
+    const webviewEl = await waitForWebviewEl(leaf);
+    await waitForWebviewDomReady(webviewEl);
+
+    try {
+        return await extractCookiesAfterNavigation(webviewEl, isLoginFlow);
+    } finally {
+        await leaf?.detach?.();
+    }
+}
+
+export async function zhihuWebLogin(app: App): Promise<void> {
+    const vault = app.vault;
 
     // 调用公共模块获取 Cookie
-    const cookies = await extractZhihuCookiesViaWindow(
-        partition,
-        { width: 800, height: 600 },
+    const cookies = await extractZhihuCookiesViaWebviewer(
+        app,
         ZHIHU_LOGIN_URL,
-        true, // 标记为登录流程，开启重定向判定
+        true,
     );
 
     new Notice(`${locale.notice.loginSuccess}`);
@@ -108,16 +325,43 @@ export async function zhihuWebLogin(app: App, isNew = false): Promise<void> {
     // Cookie 获取成功后的业务逻辑
     await dataUtil.updateData(vault, { cookies });
     await getUserInfo(vault);
+}
 
-    if (isNew) {
-        await saveSettings(vault, { partition: newPartition });
+export async function zhihuClearLoginInfo(app: App): Promise<void> {
+    const webviewer = getWebviewerInstance(app);
+    if (!webviewer) {
+        throw new Error(locale.error.enableWebviewerFirst);
     }
+
+    const leavesBeforeOpen = new Set(
+        app.workspace.getLeavesOfType(WEBVIEWER_VIEW_TYPE as any),
+    );
+    webviewer.openUrl("about:blank", true, true);
+
+    const leaf = await waitForWebviewerLeaf(app, leavesBeforeOpen);
+    const webviewEl = await waitForWebviewEl(leaf);
+    await waitForWebviewDomReady(webviewEl);
+
+    try {
+        await clearZhihuSessionData(webviewEl);
+    } finally {
+        await leaf?.detach?.();
+    }
+
+    const vault = app.vault;
+    await dataUtil.deleteData(vault, "cookies");
+    await dataUtil.deleteData(vault, "userInfo");
 }
 
 let refreshCookiesPromise: Promise<void> | null = null;
 
 // 这个函数用于自动刷新zse_ck cookie，因为它会定时失效
 export async function zhihuRefreshZseCookies(app: App): Promise<void> {
+    if (Platform.isMobile) {
+        new Notice(locale.notice.mobileRefreshCookieInDesktop);
+        return;
+    }
+
     if (refreshCookiesPromise) {
         return refreshCookiesPromise;
     }
@@ -127,15 +371,12 @@ export async function zhihuRefreshZseCookies(app: App): Promise<void> {
 
     refreshCookiesPromise = (async () => {
         const vault = app.vault;
-        const settings = await loadSettings(vault);
-        const partition = settings.partition;
 
-        // 调用公共模块获取 Cookie (小窗、直接跳转目标页)
-        const cookies = await extractZhihuCookiesViaWindow(
-            partition,
-            { width: 100, height: 100 },
+        // 调用公共模块获取 Cookie（已登录状态下，直接打开目标页刷新）
+        const cookies = await extractZhihuCookiesViaWebviewer(
+            app,
             ZHIHU_EXAMPLE_QUESTION_URL,
-            false, // 标记为非登录流程，直接提取
+            false,
         );
 
         await dataUtil.updateData(vault, { cookies });

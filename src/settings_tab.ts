@@ -77,10 +77,10 @@ function AccountSetting(containerEl: HTMLElement, tab: ZhihuSettingTab) {
     }
 
     async function handleNewLogin() {
-        await login.zhihuWebLogin(tab.app, true);
-        const { isLoggedIn, userInfo } = await fetchUserStatus(tab.app.vault);
-        tab.isLoggedIn = isLoggedIn;
-        tab.userInfo = userInfo;
+        await login.zhihuClearLoginInfo(tab.app);
+        tab.isLoggedIn = false;
+        tab.userInfo = null;
+        new Notice(locale.settings.clearLoginSuccess);
         tab.display();
     }
 
@@ -112,7 +112,7 @@ function AccountSetting(containerEl: HTMLElement, tab: ZhihuSettingTab) {
                 );
                 setting.addButton((btn) =>
                     btn
-                        .setButtonText(locale.settings.newLoginButtonText)
+                        .setButtonText(locale.settings.clearLogin)
                         .onClick(() => handleNewLogin()),
                 );
             }

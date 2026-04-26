@@ -113,6 +113,8 @@ export default {
         overwritingExistingFiles: "Overwriting existing files...",
         openingFiles: "Opening files...",
         refreshCookies: "Refreshing cookies...",
+        mobileRefreshCookieInDesktop:
+            "Refreshing cookies is not supported on mobile.\n Please do it on desktop.",
         cantFindLinks: "Cannot find any links",
         batchOpenComplete: "Batch open complete: ",
         mobileIncompatible: "Mobile device incompatible.",
@@ -147,6 +149,18 @@ export default {
             "Error occurred while detecting Typst version",
         destFolderEmpty: "Dest folder should not be empty",
         batchOpenFailed: "Failed to batch open files.",
+        waitWebviewerOpenTimeout: "Timed out waiting for Web viewer to open",
+        waitWebviewInitTimeout:
+            "Timed out waiting for Web viewer to initialize webview",
+        waitWebviewDomReadyTimeout:
+            "Timed out waiting for Web viewer dom-ready",
+        cannotAccessElectronWebContents: "Cannot access Electron webContents",
+        cannotGetWebviewWebContentsId: "Cannot get WebContents ID from webview",
+        cannotGetWebviewerSession: "Cannot get Web viewer session",
+        waitLoginAndExtractCookiesTimeout:
+            "Timed out waiting for login and cookie extraction",
+        enableWebviewerFirst:
+            "Please enable Obsidian core plugin: Web viewer first",
     },
     settings: {
         accountTitle: "My account",
@@ -154,7 +168,8 @@ export default {
         loginButtonText: "Log in",
         logoutButtonText: "Log out",
         refreshLoginButtonText: "Refresh Login Status",
-        newLoginButtonText: "Log in with New Account",
+        clearLogin: "Clear login",
+        clearLoginSuccess: "Login cleared successfully,\n Please login again.",
         userAgent: "User agent",
         userAgentDesc: "Custom user agent for Zhihu API requests",
         userAgentPlaceholder: "Enter custom user agent",
