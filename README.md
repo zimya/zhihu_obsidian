@@ -46,6 +46,8 @@ Search `Zhihu` in community plugin, click the first plugin and install.
 
 ### Login to Zhihu
 
+The login feature requires Obsidian core plugin: [web viewer](https://obsidian.md/help/plugins/web-viewer), which is disabled by default. You should enable it in `settings`-`Core plugins` before login.
+
 You can login to Zhihu by the command `Zhihu: Web login`, then you will see a web login page. Open Zhihu app and scan it, the plugin will fetch all cookies and user data automatically. (**The plugin will never, ever upload your information**)
 
 ![image-20250503144240817](./imgs/zhihu-weblogin.jpg)
