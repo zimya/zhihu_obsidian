@@ -9,7 +9,7 @@ import { basicSetup } from "./extensions";
 import { EditorState, Extension } from "@codemirror/state";
 import { EditorView, ViewUpdate } from "@codemirror/view";
 import { saveData } from "src/data";
-import { ConfirmationModal } from "src/settings_tab";
+import { ConfirmationModal } from "src/settings";
 import i18n, { type Lang } from "locales";
 import { getUserInfo } from "src/login_service";
 

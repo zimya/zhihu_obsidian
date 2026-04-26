@@ -106,14 +106,6 @@ export default class ZhihuObPlugin extends Plugin {
         // 可以使用自定义cookie或者iCloud云同步登录
         if (!Platform.isMobile) {
             this.addCommand({
-                id: "qrcode-login",
-                name: "QRCode login",
-                callback: async () => {
-                    await login.zhihuQRcodeLogin(this.app);
-                },
-            });
-
-            this.addCommand({
                 id: "web-login",
                 name: "Web login",
                 callback: async () => {

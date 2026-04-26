@@ -7,7 +7,6 @@ export default {
             "You can enter Zhihu Answer, Question, Article and Pin link",
         forExample: "Example:",
         scanLoginToZhihu: "Scan to login Zhihu",
-        generateQRCodeFailed: "Failed to generate QRCode",
         scanSuccess: "Scan success! Please confirm on Zhihu app to login.",
         recommendations: "Recommendations",
         refreshRecommend: "Refresh recommendations",
@@ -69,7 +68,6 @@ export default {
         getImageIdFailed: "Failed to get image ID",
         getImageStatusSuccess: "Get image stutus success!",
         getImageStatusFailed: "Failed to get image stutus",
-        QRCodeRefreshed: "QRCode refreshed",
         loadComplete: "Load complete",
         zseckLoadFailed:
             "Login failed! Unable to load zse-ck script, please check your network connection and retry",
@@ -115,8 +113,13 @@ export default {
         overwritingExistingFiles: "Overwriting existing files...",
         openingFiles: "Opening files...",
         refreshCookies: "Refreshing cookies...",
+        mobileRefreshCookieInDesktop:
+            "Refreshing cookies is not supported on mobile.\n Please do it on desktop.",
         cantFindLinks: "Cannot find any links",
         batchOpenComplete: "Batch open complete: ",
+        mobileIncompatible: "Mobile device incompatible.",
+        enableWebviewerFirst:
+            "Please enable Obsidian core plugin: Web viewer first",
     },
     error: {
         unknownError: "Unknown error",
@@ -148,6 +151,16 @@ export default {
             "Error occurred while detecting Typst version",
         destFolderEmpty: "Dest folder should not be empty",
         batchOpenFailed: "Failed to batch open files.",
+        waitWebviewerOpenTimeout: "Timed out waiting for Web viewer to open",
+        waitWebviewInitTimeout:
+            "Timed out waiting for Web viewer to initialize webview",
+        waitWebviewDomReadyTimeout:
+            "Timed out waiting for Web viewer dom-ready",
+        cannotAccessElectronWebContents: "Cannot access Electron webContents",
+        cannotGetWebviewWebContentsId: "Cannot get WebContents ID from webview",
+        cannotGetWebviewerSession: "Cannot get Web viewer session",
+        waitLoginAndExtractCookiesTimeout:
+            "Timed out waiting for login and cookie extraction",
     },
     settings: {
         accountTitle: "My account",
@@ -155,7 +168,11 @@ export default {
         loginButtonText: "Log in",
         logoutButtonText: "Log out",
         refreshLoginButtonText: "Refresh Login Status",
-        newLoginButtonText: "Log in with New Account",
+        clearLogin: "Clear login",
+        clearLoginSuccess: "Login cleared successfully,\n Please login again.",
+        enableWebviewerWarning:
+            "## Web viewer is disabled.\n\nPlease go to **Settings -> Core plugins**, then enable **Web viewer** to continue.",
+        enableWebviewerButton: "Go enable",
         userAgent: "User agent",
         userAgentDesc: "Custom user agent for Zhihu API requests",
         userAgentPlaceholder: "Enter custom user agent",
