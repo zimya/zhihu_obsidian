@@ -7,7 +7,6 @@ export default {
             "You can enter Zhihu Answer, Question, Article and Pin link",
         forExample: "Example:",
         scanLoginToZhihu: "Scan to login Zhihu",
-        generateQRCodeFailed: "Failed to generate QRCode",
         scanSuccess: "Scan success! Please confirm on Zhihu app to login.",
         recommendations: "Recommendations",
         refreshRecommend: "Refresh recommendations",
@@ -69,7 +68,6 @@ export default {
         getImageIdFailed: "Failed to get image ID",
         getImageStatusSuccess: "Get image stutus success!",
         getImageStatusFailed: "Failed to get image stutus",
-        QRCodeRefreshed: "QRCode refreshed",
         loadComplete: "Load complete",
         zseckLoadFailed:
             "Login failed! Unable to load zse-ck script, please check your network connection and retry",
@@ -117,6 +115,7 @@ export default {
         refreshCookies: "Refreshing cookies...",
         cantFindLinks: "Cannot find any links",
         batchOpenComplete: "Batch open complete: ",
+        mobileIncompatible: "Mobile device incompatible.",
     },
     error: {
         unknownError: "Unknown error",

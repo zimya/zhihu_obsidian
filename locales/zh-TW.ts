@@ -5,7 +5,6 @@ export default {
         enterZhihuLinkPlaceholder: "您可以輸入知乎問題、文章、回答、想法的連結",
         forExample: "例如：",
         scanLoginToZhihu: "掃碼登入知乎",
-        generateQRCodeFailed: "生成二維碼失敗",
         scanSuccess: "掃碼成功！請在知乎 App 中確認登入。",
         recommendations: "推薦",
         refreshRecommend: "刷新推薦",
@@ -65,7 +64,6 @@ export default {
         getImageIdFailed: "取得圖片 ID 失敗",
         getImageStatusSuccess: "取得圖片狀態成功！",
         getImageStatusFailed: "取得圖片狀態失敗",
-        QRCodeRefreshed: "二維碼已重新整理",
         loadComplete: "載入完成",
         zseckLoadFailed: "登入失敗！無法載入 zse-ck 腳本，請檢查網路連線並重試",
         zseckFetchFailed: "正在監聽 cookies，請耐心等待...",
@@ -110,6 +108,7 @@ export default {
         refreshCookies: "正在嘗試刷新 Cookies...",
         cantFindLinks: "沒有偵測到任何連結",
         batchOpenComplete: "批量處理完成：",
+        mobileIncompatible: "該功能與手機不相容",
     },
     error: {
         unknownError: "未知錯誤",

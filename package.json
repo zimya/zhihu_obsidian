@@ -52,7 +52,6 @@
         "mdast-util-wiki-link": "github:zimya/mdast-util-wiki-link",
         "micromark-extension-math": "github:zimya/micromark-extension-math",
         "micromark-extension-wiki-link": "github:zimya/micromark-extension-wiki-link",
-        "qrcode": "^1.5.4",
         "rehype-format": "^5.0.1",
         "rehype-raw": "github:zimya/rehype-raw",
         "rehype-stringify": "^10.0.1",

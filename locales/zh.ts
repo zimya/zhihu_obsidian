@@ -5,7 +5,6 @@ export default {
         enterZhihuLinkPlaceholder: "您可以输入知乎问题、文章、回答、想法的链接",
         forExample: "例如：",
         scanLoginToZhihu: "扫码登录知乎",
-        generateQRCodeFailed: "生成二维码失败",
         scanSuccess: "扫码成功！请在知乎 App 中确认登录。",
         recommendations: "推荐",
         refreshRecommend: "刷新推荐",
@@ -65,7 +64,6 @@ export default {
         getImageIdFailed: "获取图片 ID 失败",
         getImageStatusSuccess: "获取图片状态成功！",
         getImageStatusFailed: "获取图片状态失败",
-        QRCodeRefreshed: "二维码已刷新",
         loadComplete: "加载完成",
         zseckLoadFailed: "登录失败！无法加载 zse-ck 脚本，请检查网络连接并重试",
         zseckFetchFailed: "正在监听 cookies，请耐心等待...",
@@ -140,6 +138,7 @@ export default {
         detectTypstVersionFailed: "检测 Typst 版本时出错",
         destFolderEmpty: "Dest 目录不能为空",
         batchOpenFailed: "批量打开链接失败.",
+        mobileIncompatible: "该功能与手机不兼容",
     },
     settings: {
         accountTitle: "我的账户",
