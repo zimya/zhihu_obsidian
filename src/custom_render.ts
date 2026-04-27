@@ -723,6 +723,12 @@ function remarkSplitLinesToParagraphs() {
             (node: any, index: number | undefined, parent: any) => {
                 if (!parent || index === undefined) return;
 
+                const hasRichChildren = node.children.some(
+                    (child: any) =>
+                        child.type !== "text" && child.type !== "break",
+                );
+                if (hasRichChildren) return;
+
                 const text = node.children
                     .map((child: any) => {
                         if (child.type === "text") return child.value;
