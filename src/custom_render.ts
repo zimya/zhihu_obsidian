@@ -723,24 +723,38 @@ function remarkSplitLinesToParagraphs() {
             (node: any, index: number | undefined, parent: any) => {
                 if (!parent || index === undefined) return;
 
-                const text = node.children
-                    .map((child: any) => {
-                        if (child.type === "text") return child.value;
-                        if (child.type === "break") return "\n";
-                        return "";
-                    })
-                    .join("");
+                const groups: any[][] = [[]];
 
-                const lines = text
-                    .split(/\n+/)
-                    .map((s: string) => s.trim())
-                    .filter(Boolean);
+                for (const child of node.children) {
+                    if (child.type === "break") {
+                        groups.push([]);
+                        continue;
+                    }
+                    if (child.type === "text") {
+                        const parts = child.value.split(/\n/);
+                        for (let i = 0; i < parts.length; i++) {
+                            if (i > 0) groups.push([]);
+                            if (parts[i]) {
+                                groups[groups.length - 1].push({
+                                    type: "text",
+                                    value: parts[i],
+                                });
+                            }
+                        }
+                        continue;
+                    }
+                    groups[groups.length - 1].push(child);
+                }
 
-                if (lines.length <= 1) return;
+                const nonEmptyGroups = groups.filter(
+                    (g) => g.length > 0,
+                );
 
-                const newNodes = lines.map((line: string) => ({
+                if (nonEmptyGroups.length <= 1) return;
+
+                const newNodes = nonEmptyGroups.map((children) => ({
                     type: "paragraph",
-                    children: [{ type: "text", value: line }],
+                    children,
                 }));
 
                 parent.children.splice(index, 1, ...newNodes);
