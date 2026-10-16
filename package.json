@@ -1,6 +1,9 @@
 {
     "overrides": {
-        "esbuild": "0.17.3"
+        "esbuild": "0.17.3",
+        "defu": "^6.1.7",
+        "fflate": "^0.8.3",
+        "katex": "^0.19.0"
     },
     "name": "zhihu-obsidian",
     "version": "0.4.3",
@@ -41,7 +44,7 @@
     },
     "dependencies": {
         "@r4ai/remark-callout": "^0.6.2",
-        "file-type": "^20.4.1",
+        "file-type": "^22.2.0",
         "hast-util-to-string": "^3.0.1",
         "image-size": "^2.0.2",
         "magic-string": "^0.30.21",
