@@ -1,5 +1,4 @@
 import { Vault, Notice, requestUrl } from "obsidian";
-import * as fs from "fs";
 import { fileTypeFromBuffer } from "file-type";
 import * as cookies from "./cookies";
 import * as dataUtil from "./data";

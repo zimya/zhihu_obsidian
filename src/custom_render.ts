@@ -16,7 +16,6 @@ import type { Parent, Node } from "unist";
 import { loadSettings, ZhihuSettings } from "./settings";
 import { getOnlineImg, getZhihuImg, getImgDimensions } from "./image_service";
 import * as file from "./files";
-import * as fs from "fs";
 import * as path from "path";
 import remarkCallout from "@r4ai/remark-callout";
 import remarkBreaks from "remark-breaks";
@@ -108,7 +107,9 @@ export const remarkZhihuImgs: Plugin<[App], Parent, Parent> = (app) => {
         const settings = await loadSettings(vault);
         const tasks: Promise<void>[] = [];
 
-        visit(tree, "image", (node) => {
+        visit(tree, "image", (node: Image) => {
+            // remarkTypst 生成的图片已上传到知乎图床，无需再次下载
+            if (node.data?.hName) return;
             tasks.push(handleMdImage(app, vault, settings, node));
         });
 
@@ -262,19 +263,22 @@ export const remarkTypst: Plugin<[App], Parent, Parent> = (app) => {
         visit(tree, "math", (node: any) => {
             const typstEq = node.value;
             const toPicTask = async () => {
-                let imgLink = "";
                 try {
                     const presetStyle = settings.typstPresetStyle;
                     const typstContent = `${presetStyle}\n$ ${typstEq} $`;
-                    imgLink = await typstCode2Img(typstContent, vault);
+                    const imgArrayBuffer = await typstCode2Img(
+                        typstContent,
+                        vault,
+                    );
+                    Object.assign(
+                        node,
+                        await bufferToZhihuImageNode(vault, imgArrayBuffer, ""),
+                    );
                 } catch (e) {
                     console.error("Typst display math conversion failed:", e);
                     new Notice(`${locale.notice.typstConvertImgFailed}`);
                     return;
                 }
-                node.type = "image"; // 转换成 img 节点
-                node.url = imgLink;
-                node.alt = "";
             };
 
             const toTeXTask = async () => {
@@ -301,19 +305,22 @@ export const remarkTypst: Plugin<[App], Parent, Parent> = (app) => {
                 return;
             }
             const task = (async () => {
-                let imgLink = "";
                 try {
                     const presetStyle = settings.typstPresetStyle;
                     const typstContent = `${presetStyle}\n${typstCode}`;
-                    imgLink = await typstCode2Img(typstContent, vault);
+                    const imgArrayBuffer = await typstCode2Img(
+                        typstContent,
+                        vault,
+                    );
+                    Object.assign(
+                        node,
+                        await bufferToZhihuImageNode(vault, imgArrayBuffer, ""),
+                    );
                 } catch (error) {
                     console.error("Typst code conversion failed:", error);
                     new Notice("Typst 转换图片失败，请检查语法是否正确");
                     return;
                 }
-                node.type = "image"; // 转换成 img 节点
-                node.url = imgLink;
-                node.alt = "";
             })();
             tasks.push(task);
         });
