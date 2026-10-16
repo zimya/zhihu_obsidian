@@ -3,7 +3,7 @@
     "name": "Zhihu",
     "version": "0.4.3",
     "minAppVersion": "1.8.4",
-    "description": "Enable you to publish your articles and answers to Zhihu",
+    "description": "Enable you to publish your articles and answers to Zhihu.",
     "author": "dgg",
     "authorUrl": "https://github.com/zimya",
     "isDesktopOnly": false
