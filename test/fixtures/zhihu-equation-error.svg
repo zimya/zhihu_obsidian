@@ -1,0 +1,15 @@
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="68.048ex" height="3.843ex" style="font-size: 15px; vertical-align: -1.505ex; margin-left: -0.012ex;" viewBox="-5 -1006.6 29298.4 1654.5" role="img" focusable="false" xmlns="http://www.w3.org/2000/svg">
+<defs></defs>
+<g stroke="currentColor" fill="currentColor" stroke-width="0" transform="matrix(1 0 0 -1 0 0)">
+<rect fill="rgba(247, 86, 89, 0.08)" stroke="none" width="29288" height="1449" x="0" y="-532"></rect>
+<g fill="rgb(247, 86, 89)" stroke="rgb(247, 86, 89)" transform="translate(645,0)">
+<g transform="scale(0.9)">
+<text direction="ltr" stroke="none" font-family="monospace" transform="scale(71.759) matrix(1 0 0 -1 0 0)">Undefined control sequence \thisCommandDoesNotExist</text>
+</g>
+</g>
+<line stroke-linecap="square" stroke="#ffe6e6" stroke-width="71.76" y1="35" x2="35" x1="35" y2="1413" transform="translate(-5,-532)"></line>
+<line stroke-linecap="square" stroke="#ffe6e6" stroke-width="71.76" y1="35" x2="35" x1="35" y2="1413" transform="translate(29221,-532)"></line>
+<line stroke-linecap="square" stroke="#ffe6e6" stroke-width="71.76" y2="35" y1="35" x1="35" x2="29252" transform="translate(0,851)"></line>
+<line stroke-linecap="square" stroke="#ffe6e6" stroke-width="71.76" y2="35" y1="35" x1="35" x2="29252" transform="translate(0,-537)"></line>
+</g>
+</svg>

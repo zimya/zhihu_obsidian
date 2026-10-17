@@ -1,0 +1,20 @@
+export class App {};
+export class TFile {};
+export class TFolder {};
+export class Vault {};
+export class FileSystemAdapter {};
+export class Modal {};
+export class Component {};
+export class PluginSettingTab {};
+export class FuzzySuggestModal {};
+export class Setting {};
+export class ButtonComponent {};
+export const notices: string[] = [];
+export const requests: string[] = [];
+let responder: (options: any) => Promise<any> = async () => { throw Error('Unexpected request'); };
+export function reset(next: typeof responder) { notices.length = 0; requests.length = 0; responder = next; }
+export class Notice { constructor(message: string) { notices.push(message); } };
+export const MarkdownRenderer = {};
+export const loadMermaid = () => {throw Error('Unexpected Mermaid invocation')};
+export const requestUrl = (options: any) => { requests.push(options.url); return responder(options); };
+export const normalizePath=(s:string)=>s;

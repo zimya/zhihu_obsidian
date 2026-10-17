@@ -1,4 +1,4 @@
-import { Vault, Notice, App, TFile } from "obsidian";
+import { Vault, Notice, App, TFile, requestUrl } from "obsidian";
 import { unified, Plugin, Transformer } from "unified";
 import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
@@ -10,7 +10,7 @@ import * as muwl from "mdast-util-wiki-link";
 import { visit } from "unist-util-visit";
 import { u } from "unist-builder";
 import type { Element } from "hast";
-import type { Link, Image, Text, Code } from "mdast";
+import type { Link, Image, Text, Code, Root, Table } from "mdast";
 import type { Options as RemarkRehypeOptions } from "remark-rehype";
 import type { Parent, Node } from "unist";
 import { loadSettings, ZhihuSettings } from "./settings";
@@ -19,8 +19,9 @@ import * as file from "./files";
 import * as path from "path";
 import remarkCallout from "@r4ai/remark-callout";
 import remarkBreaks from "remark-breaks";
-import { mathFromMarkdown, mathToMarkdown } from "mdast-util-math";
-import { math } from "micromark-extension-math";
+import { mathPlugin, zhihuEquation } from "./math";
+import { prepareMathTables, renderZhihuTable, type MathTableResult, type MathTableFallback } from "./math_table";
+import { validateEquation } from "./math_table_validation";
 import * as mermaid from "./mermaid";
 import { typst2tex } from "tex2typst";
 import i18n, { type Lang } from "../locales";
@@ -65,22 +66,6 @@ interface WikiLinkNode extends Node {
         permalink: string;
         exists: boolean;
     };
-}
-
-function mathPlugin(this: any) {
-    const settings = this || {};
-    const data = this.data();
-
-    const micromarkExtensions =
-        data.micromarkExtensions || (data.micromarkExtensions = []);
-    const fromMarkdownExtensions =
-        data.fromMarkdownExtensions || (data.fromMarkdownExtensions = []);
-    const toMarkdownExtensions =
-        data.toMarkdownExtensions || (data.toMarkdownExtensions = []);
-
-    micromarkExtensions.push(math(settings));
-    fromMarkdownExtensions.push(mathFromMarkdown());
-    toMarkdownExtensions.push(mathToMarkdown(settings));
 }
 
 function wikiLinkPlugin(this: any, opts = {}) {
@@ -331,6 +316,8 @@ export const remarkTypst: Plugin<[App], Parent, Parent> = (app) => {
 
 export async function remarkMdToHTML(app: App, md: string) {
     const idMap = new Map<string, number>(); // 原始id → 新编号
+    const mathTableFallbacks = new Set<MathTableFallback>();
+    let preparedTables = new Map<Table, MathTableResult>();
     const settings = await loadSettings(app.vault);
     const zhihuHandlers = {
         link(state: any, node: Link): Element {
@@ -371,41 +358,10 @@ export async function remarkMdToHTML(app: App, md: string) {
             };
         },
         inlineMath(state: any, node: any): Element {
-            const eq = node.value;
-            const alt = eq.replace(/[\n\r]/g, " ");
-            const encoded = encodeURI(eq);
-            return {
-                type: "element",
-                tagName: "img",
-                properties: {
-                    eeimg: "1",
-                    src: `//www.zhihu.com/equation?tex=${encoded}`,
-                    alt: alt,
-                },
-                children: [],
-            };
+            return zhihuEquation(node.value, false);
         },
         math(state: any, node: any): Element {
-            const eq = node.value;
-            const alt = eq.replace(/[\n\r]/g, " ");
-            const encoded = encodeURI(eq);
-            return {
-                type: "element",
-                tagName: "p",
-                properties: {},
-                children: [
-                    {
-                        type: "element",
-                        tagName: "img",
-                        properties: {
-                            eeimg: "2",
-                            src: `//www.zhihu.com/equation?tex=${encoded}`,
-                            alt: alt,
-                        },
-                        children: [],
-                    },
-                ],
-            };
+            return zhihuEquation(node.value, true);
         },
         // EXAMPLE:
         // ```python
@@ -424,29 +380,10 @@ export async function remarkMdToHTML(app: App, md: string) {
                 children: [u("text", code)],
             };
         },
-        table(state: any, node: any): Element {
-            // EXAMPLE:
-            // <table data-draft-node="block" data-draft-type="table" data-size="normal"><tbody>
-            // <tr><th>水果</th><th>英文</th></tr>
-            // <tr><td>苹果</td><td>apple</td></tr>
-            // </tbody></table>
-            const rows = state.all(node) as Element[];
-            const tbody: Element = u(
-                "element",
-                { tagName: "tbody", properties: {} },
-                rows,
-            );
-
-            return {
-                type: "element",
-                tagName: "table",
-                properties: {
-                    "data-draft-node": "block",
-                    "data-draft-type": "table",
-                    "data-size": "normal",
-                },
-                children: [tbody],
-            };
+        table(state: any, node: Table): Element | Element[] {
+            return renderZhihuTable(state, node, (reason) => {
+                mathTableFallbacks.add(reason);
+            }, preparedTables.get(node));
         },
         // EXAMPLE:
         // <sup data-text="注释文本" data-url="https://www.github.com"
@@ -681,6 +618,11 @@ export async function remarkMdToHTML(app: App, md: string) {
         .use(remarkSplitLinesToParagraphs) // 换行符换行
         .use(remarkTypst, app) // 将数学公式转换为 Typst 或者图片节点
         .use(remarkZhihuImgs, app) // 将上面解析的图片节点和维基链接节点转换为知乎图片
+        .use(() => async (tree: Root) => {
+            preparedTables = await prepareMathTables(tree, (url) =>
+                validateEquation(() => requestUrl({ url, throw: false })),
+            );
+        })
         .use(remarkRehype, undefined, rehypeOpts) // 转换其余不需要异步的节点
         .use(rehypeRaw) // 解析 HTML 标签
         // .use(rehypeFormat, { indent: 0 }) // 会导致行内公式被强制换行
@@ -689,6 +631,11 @@ export async function remarkMdToHTML(app: App, md: string) {
         .process(md);
 
     const htmlOutput = String(output);
+    for (const reason of mathTableFallbacks) {
+        const message = reason === "size" ? locale.notice.mathTableTooLarge :
+            reason === "render" ? locale.notice.mathTableRenderFailed : locale.notice.mathTableKeptNative;
+        new Notice(message, 10000);
+    }
     console.log(htmlOutput);
     return htmlOutput;
 }
