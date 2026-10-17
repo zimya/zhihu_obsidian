@@ -1,4 +1,11 @@
-import { App, Vault, Notice, Platform, requestUrl } from "obsidian";
+import {
+    App,
+    Vault,
+    Notice,
+    Platform,
+    requestUrl,
+    getLanguage,
+} from "obsidian";
 import * as dataUtil from "./data";
 import * as cookieUtil from "./cookies";
 import { ConfirmationModal } from "./settings";
@@ -88,16 +95,14 @@ function getWebviewerInstance(app: App): WebviewerInstance | undefined {
 
 // 引导用户开启网页浏览器
 function showEnableWebviewerModal(app: App): void {
-    const language = (
-        window.localStorage.getItem("language") ?? "en"
-    ).toLowerCase();
+    const language = getLanguage().toLowerCase();
     const webviewerKeywordMap: Record<string, string> = {
         zh: "网页浏览器",
         "zh-tw": "網頁檢視器",
     };
     const webviewerKeyword = webviewerKeywordMap[language] ?? "web viewer";
 
-    new ConfirmationModal(
+    const modal = new ConfirmationModal(
         app,
         locale.settings.enableWebviewerWarning,
         (button) => {
@@ -106,44 +111,52 @@ function showEnableWebviewerModal(app: App): void {
                 .setCta();
         },
         async () => {
+            modal.close();
+
+            await sleep(60);
+
             const privateApp = app as unknown as {
                 setting?: { open?(): void };
                 commands?: { executeCommandById?(id: string): void };
             };
             privateApp.setting?.open?.();
             privateApp.commands?.executeCommandById?.("app:open-settings");
-            window.setTimeout(() => {
-                const tabEls = Array.from(
-                    document.querySelectorAll<HTMLElement>(
-                        ".vertical-tab-nav-item",
-                    ),
-                );
-                const target = tabEls.find((el) => {
-                    const id = (
-                        el.getAttribute("data-setting-id") ?? ""
-                    ).toLowerCase();
-                    return id.includes("plugins");
-                });
-                target?.click();
+            await sleep(60);
 
-                window.setTimeout(() => {
-                    const searchInput =
-                        document.querySelector<HTMLInputElement>(
-                            '.setting-group-search input[type="search"]',
-                        );
-                    if (!searchInput) return;
-                    searchInput.focus();
-                    searchInput.value = webviewerKeyword;
-                    searchInput.dispatchEvent(
-                        new Event("input", { bubbles: true }),
-                    );
-                    searchInput.dispatchEvent(
-                        new Event("change", { bubbles: true }),
-                    );
-                }, 120);
-            }, 120);
+            const settingsDocument =
+                (window as Window & { activeDocument?: Document })
+                    .activeDocument ?? document;
+            const searchInput =
+                settingsDocument.querySelector<HTMLInputElement>(
+                    "body > div.modal.mod-settings.mod-sidebar-layout > div.modal-content.vertical-tabs-container > div.vertical-tab-header > div.setting-search-container > div > input[type=search]",
+                );
+            if (!searchInput) return;
+
+            searchInput.focus();
+            searchInput.value = webviewerKeyword;
+            const EventConstructor =
+                settingsDocument.defaultView?.Event ?? Event;
+            searchInput.dispatchEvent(
+                new EventConstructor("input", { bubbles: true }),
+            );
+            searchInput.dispatchEvent(
+                new EventConstructor("change", { bubbles: true }),
+            );
+            await sleep(60);
+
+            const result = Array.from(
+                settingsDocument.querySelectorAll<HTMLElement>(
+                    ".setting-search-result-item",
+                ),
+            ).find(
+                (item) =>
+                    item.textContent?.trim().toLowerCase() ===
+                    webviewerKeyword.toLowerCase(),
+            );
+            result?.click();
         },
-    ).open();
+    );
+    modal.open();
 }
 
 async function waitForWebviewerLeaf(
