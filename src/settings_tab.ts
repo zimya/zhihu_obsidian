@@ -36,7 +36,10 @@ async function fetchUserStatus(vault: Vault) {
 }
 
 function AccountSetting(containerEl: HTMLElement, tab: ZhihuSettingTab) {
-    function renderUserInfo(setting: Setting, userInfo: any) {
+    function renderUserInfo(
+        setting: Setting,
+        userInfo: { avatar_url: string; name: string; headline?: string },
+    ) {
         const container = setting.nameEl.createDiv({ cls: "zhihu-user-info" });
         container.createEl("img", {
             cls: "zhihu-avatar",

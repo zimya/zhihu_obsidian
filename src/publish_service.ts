@@ -228,7 +228,7 @@ async function newDraft(vault: Vault, title: string) {
             "captcha_session_v2",
             "z_c0",
         ]);
-        const xsrftoken = data.cookies._xsrf;
+        const xsrftoken = data.cookies?._xsrf ?? "";
         const response = await requestUrl({
             url: `https://zhuanlan.zhihu.com/api/articles/drafts`,
             headers: {
@@ -266,7 +266,7 @@ async function newDraft(vault: Vault, title: string) {
     }
 }
 
-async function patchDraft(vault: Vault, id: string, patchBody: any) {
+async function patchDraft(vault: Vault, id: string, patchBody: unknown) {
     try {
         const data = await dataUtil.loadData(vault);
         const settings = await loadSettings(vault);
@@ -278,7 +278,7 @@ async function patchDraft(vault: Vault, id: string, patchBody: any) {
             "captcha_session_v2",
             "z_c0",
         ]);
-        const xsrftoken = data.cookies._xsrf;
+        const xsrftoken = data.cookies?._xsrf ?? "";
         const url = `https://zhuanlan.zhihu.com/api/articles/${id}/draft`;
         await requestUrl({
             url: url,
@@ -332,7 +332,7 @@ async function publishDraft(
             "z_c0",
             "q_c1",
         ]);
-        const xsrftoken = data.cookies._xsrf;
+        const xsrftoken = data.cookies?._xsrf ?? "";
         const traceId = `${Date.now()},${uuidv4()}`;
         const response = await requestUrl({
             url: `https://www.zhihu.com/api/v4/content/publish`,
@@ -421,7 +421,7 @@ async function checkQuestion(
             "z_c0",
             "q_c1",
         ]);
-        const xsrftoken = data.cookies._xsrf;
+        const xsrftoken = data.cookies?._xsrf ?? "";
         const url = `https://www.zhihu.com/api/v4/creators/article_publish/check/question`;
         await requestUrl({
             url: url,

@@ -1,4 +1,5 @@
 import {
+    App,
     Editor,
     EditorPosition,
     EditorSuggest,
@@ -74,7 +75,7 @@ export async function autoCompletePeople(
 }
 
 export class MentionSuggest extends EditorSuggest<MentionSuggestion> {
-    constructor(app: any) {
+    constructor(app: App) {
         super(app);
     }
 

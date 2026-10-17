@@ -1,6 +1,8 @@
 import { Vault } from "obsidian";
 
-export function getCookiesFromHeader(response: any): { [key: string]: string } {
+export function getCookiesFromHeader(response: {
+    headers: Record<string, string | string[] | undefined>;
+}): { [key: string]: string } {
     let new_cookies: string[] = [];
     const res_cookies = response.headers["set-cookie"];
     if (Array.isArray(res_cookies)) {
@@ -24,15 +26,18 @@ export function getCookiesFromHeader(response: any): { [key: string]: string } {
     return result;
 }
 
-export function cookiesHeaderBuilder(data: any, keys: string[]): string {
+export function cookiesHeaderBuilder(
+    data: { cookies?: Record<string, string> },
+    keys: string[],
+): string {
     // if key is empty: return all cookies
     if (keys.length === 0) {
-        return Object.entries(data.cookies)
+        return Object.entries(data.cookies ?? {})
             .map(([key, value]) => `${key}=${value}`)
             .join("; ");
     }
     // else: return only the specified cookies
-    return Object.entries(data.cookies)
+    return Object.entries(data.cookies ?? {})
         .filter(([key]) => keys.includes(key))
         .map(([key, value]) => `${key}=${value}`)
         .join("; ");

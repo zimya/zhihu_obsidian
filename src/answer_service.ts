@@ -162,7 +162,7 @@ async function patchDraft(
     vault: Vault,
     questionId: string,
     answerId: string,
-    patchBody: any,
+    patchBody: unknown,
 ) {
     try {
         const data = await dataUtil.loadData(vault);
@@ -175,7 +175,7 @@ async function patchDraft(
             "captcha_session_v2",
             "z_c0",
         ]);
-        const xsrftoken = data.cookies._xsrf;
+        const xsrftoken = data.cookies?._xsrf ?? "";
         const url = `https://www.zhihu.com/api/v4/questions/${questionId}/draft`;
         await requestUrl({
             url: url,
@@ -231,7 +231,7 @@ async function publishAnswerDraft(
             "z_c0",
             "q_c1",
         ]);
-        const xsrftoken = data.cookies._xsrf;
+        const xsrftoken = data.cookies?._xsrf ?? "";
         const traceId = `${Date.now()},${uuidv4()}`;
         const response = await requestUrl({
             url: `https://www.zhihu.com/api/v4/content/publish`,

@@ -68,8 +68,17 @@ export function isWebUrl(url: string): boolean {
     }
 }
 
+interface ElectronDialog {
+    showOpenDialog(options: {
+        title: string;
+        properties: string[];
+    }): Promise<{ canceled: boolean; filePaths?: string[] }>;
+}
+
 export async function pickDirectoryDesktop(): Promise<string | null> {
-    let electron: any;
+    let electron:
+        | { remote?: { dialog?: ElectronDialog }; dialog?: ElectronDialog }
+        | undefined;
     try {
         // Obsidian 桌面端才能 require('electron')
         electron = require("electron");

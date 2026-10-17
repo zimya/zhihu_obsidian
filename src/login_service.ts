@@ -12,24 +12,87 @@ const WEBVIEWER_PLUGIN_ID = "webviewer";
 const WEBVIEWER_VIEW_TYPE = "webviewer";
 const WAIT_TIMEOUT_MS = 120000;
 
+interface WebviewerInstance {
+    openUrl(url: string, newWindow: boolean, focus: boolean): void;
+}
+
+interface ElectronCookie {
+    name: string;
+    value: string;
+    domain?: string;
+    path?: string;
+    secure?: boolean;
+}
+
+interface ElectronSession {
+    cookies: {
+        get(filter: { url: string }): Promise<ElectronCookie[]>;
+        remove(url: string, name: string): Promise<void>;
+    };
+    clearStorageData(options: {
+        origin: string;
+        storages: string[];
+    }): Promise<void>;
+}
+
+interface ZhihuWebviewElement extends HTMLElement {
+    getWebContentsId?(): number;
+    getURL?(): string;
+    loadURL(url: string): Promise<void>;
+}
+
+interface ElectronWebContents {
+    session?: ElectronSession;
+    debugger?: {
+        on(
+            event: string,
+            listener: (event: unknown, method: string, params: unknown) => void,
+        ): void;
+        removeListener(
+            event: string,
+            listener: (event: unknown, method: string, params: unknown) => void,
+        ): void;
+        isAttached?(): boolean;
+        attach?(version: string): void;
+        sendCommand?(command: string): void;
+        detach?(): void;
+    };
+}
+
+interface ElectronRemote {
+    webContents?: { fromId(id: number): ElectronWebContents | undefined };
+}
+
 function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
-function getWebviewerInstance(app: App): any {
-    const internalPlugins = (app as any).internalPlugins;
+function getWebviewerInstance(app: App): WebviewerInstance | undefined {
+    const internalPlugins = (
+        app as unknown as {
+            internalPlugins?: {
+                getPluginById?(
+                    id: string,
+                ):
+                    | { enabled?: boolean; instance?: WebviewerInstance }
+                    | undefined;
+            };
+        }
+    ).internalPlugins;
     const plugin = internalPlugins?.getPluginById?.(WEBVIEWER_PLUGIN_ID);
     if (!plugin?.enabled || !plugin?.instance) {
-        return null;
+        return undefined;
     }
     return plugin.instance;
 }
 
 // 引导用户开启网页浏览器
 function showEnableWebviewerModal(app: App): void {
-    const language = (window.localStorage.getItem("language") ?? "en").toLowerCase();
+    const language = (
+        window.localStorage.getItem("language") ?? "en"
+    ).toLowerCase();
     const webviewerKeywordMap: Record<string, string> = {
-        "zh": "网页浏览器",
+        zh: "网页浏览器",
         "zh-tw": "網頁檢視器",
     };
     const webviewerKeyword = webviewerKeywordMap[language] ?? "web viewer";
@@ -43,10 +106,12 @@ function showEnableWebviewerModal(app: App): void {
                 .setCta();
         },
         async () => {
-            const setting = (app as any).setting;
-            setting?.open?.();
-
-            (app as any).commands?.executeCommandById?.("app:open-settings");
+            const privateApp = app as unknown as {
+                setting?: { open?(): void };
+                commands?: { executeCommandById?(id: string): void };
+            };
+            privateApp.setting?.open?.();
+            privateApp.commands?.executeCommandById?.("app:open-settings");
             window.setTimeout(() => {
                 const tabEls = Array.from(
                     document.querySelectorAll<HTMLElement>(
@@ -62,9 +127,10 @@ function showEnableWebviewerModal(app: App): void {
                 target?.click();
 
                 window.setTimeout(() => {
-                    const searchInput = document.querySelector<HTMLInputElement>(
-                        '.setting-group-search input[type="search"]',
-                    );
+                    const searchInput =
+                        document.querySelector<HTMLInputElement>(
+                            '.setting-group-search input[type="search"]',
+                        );
                     if (!searchInput) return;
                     searchInput.focus();
                     searchInput.value = webviewerKeyword;
@@ -82,14 +148,12 @@ function showEnableWebviewerModal(app: App): void {
 
 async function waitForWebviewerLeaf(
     app: App,
-    leavesBeforeOpen: Set<any>,
-): Promise<any> {
+    leavesBeforeOpen: Set<import("obsidian").WorkspaceLeaf>,
+): Promise<import("obsidian").WorkspaceLeaf> {
     const startAt = Date.now();
     while (Date.now() - startAt < WAIT_TIMEOUT_MS) {
-        const leaves = app.workspace.getLeavesOfType(
-            WEBVIEWER_VIEW_TYPE as any,
-        );
-        const newLeaf = leaves.find((leaf: any) => !leavesBeforeOpen.has(leaf));
+        const leaves = app.workspace.getLeavesOfType(WEBVIEWER_VIEW_TYPE);
+        const newLeaf = leaves.find((leaf) => !leavesBeforeOpen.has(leaf));
         if (newLeaf) {
             return newLeaf;
         }
@@ -101,10 +165,15 @@ async function waitForWebviewerLeaf(
     throw new Error(locale.error.waitWebviewerOpenTimeout);
 }
 
-async function waitForWebviewEl(leaf: any): Promise<any> {
+async function waitForWebviewEl(
+    leaf: import("obsidian").WorkspaceLeaf,
+): Promise<ZhihuWebviewElement> {
     const startAt = Date.now();
     while (Date.now() - startAt < WAIT_TIMEOUT_MS) {
-        const webviewEl = leaf?.view?.contentEl?.querySelector?.("webview");
+        const webviewEl =
+            leaf.view?.containerEl.querySelector<ZhihuWebviewElement>(
+                "webview",
+            );
         if (webviewEl) {
             return webviewEl;
         }
@@ -113,7 +182,9 @@ async function waitForWebviewEl(leaf: any): Promise<any> {
     throw new Error(locale.error.waitWebviewInitTimeout);
 }
 
-async function waitForWebviewDomReady(webviewEl: any): Promise<void> {
+async function waitForWebviewDomReady(
+    webviewEl: ZhihuWebviewElement,
+): Promise<void> {
     const canUseWebContents = () => {
         try {
             return Boolean(webviewEl?.getWebContentsId?.());
@@ -146,8 +217,14 @@ async function waitForWebviewDomReady(webviewEl: any): Promise<void> {
     });
 }
 
-function getZhihuSessionFromWebview(webviewEl: any): any {
-    const remote = (window as any).require?.("@electron/remote");
+function getZhihuSessionFromWebview(
+    webviewEl: ZhihuWebviewElement,
+): ElectronSession {
+    const remote = (
+        window as unknown as {
+            require?: (moduleName: string) => ElectronRemote;
+        }
+    ).require?.("@electron/remote");
     const webContents = remote?.webContents;
     if (!webContents) {
         throw new Error(locale.error.cannotAccessElectronWebContents);
@@ -163,8 +240,14 @@ function getZhihuSessionFromWebview(webviewEl: any): any {
     return wc.session;
 }
 
-function getWebContentsFromWebview(webviewEl: any): any {
-    const remote = (window as any).require?.("@electron/remote");
+function getWebContentsFromWebview(
+    webviewEl: ZhihuWebviewElement,
+): ElectronWebContents {
+    const remote = (
+        window as unknown as {
+            require?: (moduleName: string) => ElectronRemote;
+        }
+    ).require?.("@electron/remote");
     const webContents = remote?.webContents;
     if (!webContents) {
         throw new Error(locale.error.cannotAccessElectronWebContents);
@@ -193,7 +276,7 @@ function normalizeCookiePath(path: string | undefined): string {
     return path.startsWith("/") ? path : `/${path}`;
 }
 
-function buildCookieRemovalUrl(cookie: any): string | null {
+function buildCookieRemovalUrl(cookie: ElectronCookie): string | null {
     const domain = String(cookie?.domain ?? "").replace(/^\./, "");
     if (!domain) {
         return null;
@@ -203,16 +286,18 @@ function buildCookieRemovalUrl(cookie: any): string | null {
     return `${protocol}://${domain}${path}`;
 }
 
-async function clearZhihuSessionData(webviewEl: any): Promise<void> {
+async function clearZhihuSessionData(
+    webviewEl: ZhihuWebviewElement,
+): Promise<void> {
     const ses = getZhihuSessionFromWebview(webviewEl);
 
-    const cookieCandidates: any[] = [];
+    const cookieCandidates: ElectronCookie[] = [];
     for (const url of ["https://www.zhihu.com", "https://zhihu.com"]) {
         const cookies = await ses.cookies.get({ url });
         cookieCandidates.push(...cookies);
     }
 
-    const uniqueCookies = new Map<string, any>();
+    const uniqueCookies = new Map<string, ElectronCookie>();
     cookieCandidates.forEach((cookie) => {
         const key = [
             String(cookie?.domain ?? ""),
@@ -257,7 +342,7 @@ async function clearZhihuSessionData(webviewEl: any): Promise<void> {
 }
 
 async function extractCookiesAfterNavigation(
-    webviewEl: any,
+    webviewEl: ZhihuWebviewElement,
     isLoginFlow: boolean,
     previousZseCkValue: string | null,
 ): Promise<Record<string, string>> {
@@ -274,16 +359,21 @@ async function extractCookiesAfterNavigation(
             const handler = (
                 _event: unknown,
                 method: string,
-                params: any,
+                params: unknown,
             ): void => {
                 if (method !== "Network.responseReceived") {
                     return;
                 }
-                const url = String(params?.response?.url ?? "");
+                const response = (
+                    params as {
+                        response?: { url?: string; status?: number };
+                    }
+                )?.response;
+                const url = String(response?.url ?? "");
                 if (!url.startsWith(ZHIHU_EXAMPLE_QUESTION_URL)) {
                     return;
                 }
-                const status = Number(params?.response?.status);
+                const status = Number(response?.status);
                 if (status === 403) {
                     saw403ForExampleQuestion = true;
                 }
@@ -293,12 +383,12 @@ async function extractCookiesAfterNavigation(
             detachDebugger = () => {
                 try {
                     wc.debugger?.removeListener?.("message", handler);
-                } catch { }
+                } catch {}
                 try {
                     if (wc.debugger?.isAttached?.()) {
                         wc.debugger?.detach?.();
                     }
-                } catch { }
+                } catch {}
             };
 
             wc.debugger?.attach?.("1.3");
@@ -346,7 +436,7 @@ async function extractCookiesAfterNavigation(
             const cookies = await ses.cookies.get({
                 url: "https://www.zhihu.com",
             });
-            const zse = cookies.find((c: any) => c.name === "__zse_ck");
+            const zse = cookies.find((cookie) => cookie.name === "__zse_ck");
             if (!zse) {
                 return;
             }
@@ -361,8 +451,8 @@ async function extractCookiesAfterNavigation(
             }
 
             const cookieObj: Record<string, string> = {};
-            cookies.forEach((c: { name: string; value: string }) => {
-                cookieObj[c.name] = c.value;
+            cookies.forEach((cookie) => {
+                cookieObj[cookie.name] = cookie.value;
             });
             finishWithCookies(cookieObj);
         };
@@ -426,7 +516,7 @@ async function extractZhihuCookiesViaWebviewer(
     }
 
     const leavesBeforeOpen = new Set(
-        app.workspace.getLeavesOfType(WEBVIEWER_VIEW_TYPE as any),
+        app.workspace.getLeavesOfType(WEBVIEWER_VIEW_TYPE),
     );
 
     webviewer.openUrl(initialUrl, true, true);
@@ -472,7 +562,7 @@ export async function zhihuClearLoginInfo(app: App): Promise<void> {
     }
 
     const leavesBeforeOpen = new Set(
-        app.workspace.getLeavesOfType(WEBVIEWER_VIEW_TYPE as any),
+        app.workspace.getLeavesOfType(WEBVIEWER_VIEW_TYPE),
     );
     webviewer.openUrl("about:blank", true, true);
 

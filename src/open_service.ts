@@ -96,6 +96,70 @@ type FrontmatterValue =
     | FrontmatterValue[]
     | { [key: string]: FrontmatterValue };
 
+interface ZhihuStatistics {
+    favorites: number;
+    likeCount: number;
+    downVoteCount: number;
+    upVoteCount: number;
+    commentCount: number;
+}
+
+interface ZhihuAuthor {
+    name: string;
+    id: string;
+}
+
+interface ZhihuAnswerData {
+    id: string;
+    title?: string;
+    author: ZhihuAuthor;
+    question?: { title: string };
+    content: string;
+    createdTime: number;
+    updatedTime: number;
+    created: number;
+    updated: number;
+    reaction: { statistics: ZhihuStatistics };
+}
+
+interface ZhihuQuestionData {
+    author: ZhihuAuthor;
+    detail: string;
+    title: string;
+    answerCount: number;
+    visitCount: number;
+    commentCount: number;
+    voteupCount: number;
+    followerCount: number;
+    created: number;
+    updatedTime: number;
+}
+
+interface ZhihuPinData {
+    contentHtml?: string;
+    content?: Array<{
+        type?: string;
+        originalUrl?: string;
+        width?: number;
+        height?: number;
+    }>;
+    reaction?: { statistics?: ZhihuStatistics };
+    created: number;
+    updated: number;
+}
+
+interface ZhihuInitialData {
+    initialState?: {
+        entities?: {
+            answers?: Record<string, ZhihuAnswerData>;
+            articles?: Record<string, ZhihuAnswerData>;
+            questions?: Record<string, ZhihuQuestionData>;
+            pins?: Record<string, ZhihuPinData>;
+            users?: Record<string, { name?: string }>;
+        };
+    };
+}
+
 type ParsedZhihu = {
     fileName: string;
     frontmatter: Record<string, FrontmatterValue>;
@@ -355,7 +419,7 @@ async function getZhihuContentHTML(app: App, zhihuLink: string) {
             //  即使并发调用，也只会生成一个窗口
             await zhihuRefreshZseCookies(app);
             return await fetchWithCookies();
-        } catch (error2: any) {
+        } catch (error2) {
             console.error(locale.notice.requestAnswerFailed, error2);
             new Notice(
                 `${locale.notice.requestAnswerFailed}, ${error2?.message ?? error2}`,
@@ -365,16 +429,23 @@ async function getZhihuContentHTML(app: App, zhihuLink: string) {
     }
 }
 
-function parseInitialDataJsonFromHtml(htmlText: string): any {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(htmlText, "text/html");
+function parseInitialDataJsonFromHtml(htmlText: string): ZhihuInitialData {
+    const doc = new DOMParser().parseFromString(htmlText, "text/html");
+    return parseInitialDataJsonFromDocument(doc);
+}
+
+function parseInitialDataJsonFromDocument(doc: Document): ZhihuInitialData {
     const scriptTag = doc.querySelector(
         'script#js-initialData[type="text/json"]',
     );
     if (!scriptTag) throw new Error("js-initialData script tag not found");
     const jsonText = scriptTag.textContent;
     if (!jsonText) throw new Error("js-initialData is empty");
-    return JSON.parse(jsonText);
+    const parsed: unknown = JSON.parse(jsonText);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        throw new Error("js-initialData must contain a JSON object");
+    }
+    return parsed as ZhihuInitialData;
 }
 
 /**
@@ -386,17 +457,18 @@ async function phaseAnswer(app: App, link: string): Promise<ParsedZhihu> {
     const [questionId, answerId] = getQuestionAndAnswerId(link);
     const htmlText = await getZhihuContentHTML(app, link);
     const jsonData = parseInitialDataJsonFromHtml(htmlText);
-    const data = jsonData?.initialState?.entities?.answers?.[answerId];
-    const author = data?.author?.name || "知乎用户";
-    const content = data?.content || "";
+    const data = jsonData.initialState?.entities?.answers?.[answerId];
+    if (!data) throw new Error(`知乎回答 ${answerId} 不存在`);
+    const author = data.author.name || "知乎用户";
+    const content = data.content || "";
 
-    const title = data?.question?.title || `知乎问题${questionId}`;
+    const title = data.question?.title || `知乎问题${questionId}`;
     const fileName = removeSpecialChars(
         `${stripHtmlTags(title)}-${author}的回答.md`,
     );
-    const statistics = data?.reaction?.statistics;
-    const authorName = data?.author?.name;
-    const authorId = data?.author?.id;
+    const statistics = data.reaction.statistics;
+    const authorName = data.author.name;
+    const authorId = data.author.id;
     const frontmatter: Record<string, FrontmatterValue> = {
         tags: "zhihu-answer",
         "zhihu-title": title,
@@ -423,16 +495,17 @@ async function phaseArticle(app: App, link: string): Promise<ParsedZhihu> {
     const htmlText = await getZhihuContentHTML(app, link);
     const jsonData = parseInitialDataJsonFromHtml(htmlText);
 
-    const data = jsonData?.initialState?.entities?.articles?.[articleId];
-    const author = data?.author?.name || "知乎用户";
-    const content = data?.content || "";
-    const title = data?.title || `知乎文章${articleId}`;
+    const data = jsonData.initialState?.entities?.articles?.[articleId];
+    if (!data) throw new Error(`知乎文章 ${articleId} 不存在`);
+    const author = data.author.name || "知乎用户";
+    const content = data.content || "";
+    const title = data.title || `知乎文章${articleId}`;
     const fileName = removeSpecialChars(
         `${stripHtmlTags(title)}-${author}的文章.md`,
     );
-    const statistics = data?.reaction?.statistics;
-    const authorName = data?.author?.name;
-    const authorId = data?.author?.id;
+    const statistics = data.reaction.statistics;
+    const authorName = data.author.name;
+    const authorId = data.author.id;
     const frontmatter: Record<string, FrontmatterValue> = {
         tags: "zhihu-article",
         "zhihu-title": title,
@@ -458,39 +531,31 @@ async function phaseQuestion(app: App, link: string): Promise<ParsedZhihu> {
     const questionId = getQestionId(link);
     const htmlText = await getZhihuContentHTML(app, link);
 
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(htmlText, "text/html");
-    const jsonData = (() => {
-        const scriptTag = doc.querySelector(
-            'script#js-initialData[type="text/json"]',
-        );
-        if (!scriptTag) throw new Error("js-initialData script tag not found");
-        const jsonText = scriptTag.textContent;
-        if (!jsonText) throw new Error("js-initialData is empty");
-        return JSON.parse(jsonText);
-    })();
+    const doc = new DOMParser().parseFromString(htmlText, "text/html");
+    const jsonData = parseInitialDataJsonFromDocument(doc);
 
-    const quesData = jsonData?.initialState?.entities?.questions?.[questionId];
-    const asker = quesData?.author?.name || "知乎用户";
-    const questionDetail = quesData?.detail || "";
-    const title = quesData?.title || `知乎问题${questionId}`;
+    const quesData = jsonData.initialState?.entities?.questions?.[questionId];
+    if (!quesData) throw new Error(`知乎问题 ${questionId} 不存在`);
+    const asker = quesData.author.name || "知乎用户";
+    const questionDetail = quesData.detail || "";
+    const title = quesData.title || `知乎问题${questionId}`;
     const fileName = removeSpecialChars(
         `${stripHtmlTags(title)}-${asker}的问题.md`,
     );
     // 附上问题回答（遍历 initialData answers）
-    const answerData = jsonData?.initialState?.entities?.answers || {};
+    const answerData = jsonData.initialState?.entities?.answers ?? {};
     const answerContainer = doc.createElement("div");
 
     for (const key in answerData) {
         const answer = answerData[key];
         const header = doc.createElement("h1");
         const link = doc.createElement("a");
-        link.href = `https://www.zhihu.com/question/${questionId}/answer/${answer?.id}`;
-        link.textContent = `${answer?.author?.name || "知乎用户"}的回答`;
+        link.href = `https://www.zhihu.com/question/${questionId}/answer/${answer.id}`;
+        link.textContent = `${answer.author.name || "知乎用户"}的回答`;
         header.appendChild(link);
 
         const content = doc.createElement("div");
-        content.appendChild(sanitizeHTMLToDom(answer?.content || ""));
+        content.appendChild(sanitizeHTMLToDom(answer.content || ""));
 
         answerContainer.appendChild(header);
         answerContainer.appendChild(content);
@@ -500,8 +565,8 @@ async function phaseQuestion(app: App, link: string): Promise<ParsedZhihu> {
     container.appendChild(sanitizeHTMLToDom(questionDetail));
     container.appendChild(answerContainer);
 
-    const authorName = quesData?.author?.name;
-    const authorId = quesData?.author?.id;
+    const authorName = quesData.author.name;
+    const authorId = quesData.author.id;
     const frontmatter: Record<string, FrontmatterValue> = {
         tags: "zhihu-question",
         "zhihu-title": title,
@@ -529,8 +594,9 @@ async function phasePin(app: App, link: string): Promise<ParsedZhihu> {
     const htmlText = await getZhihuContentHTML(app, link);
     const jsonData = parseInitialDataJsonFromHtml(htmlText);
 
-    const pinData = jsonData?.initialState?.entities?.pins?.[pinId];
-    const users = jsonData?.initialState?.entities?.users || {};
+    const pinData = jsonData.initialState?.entities?.pins?.[pinId];
+    if (!pinData) throw new Error(`知乎想法 ${pinId} 不存在`);
+    const users = jsonData.initialState?.entities?.users ?? {};
     const title = `想法${pinId}`;
 
     // author：遍历 users 找一个 name
@@ -547,10 +613,10 @@ async function phasePin(app: App, link: string): Promise<ParsedZhihu> {
     );
     // contentHtml 很可能是 string，别当 DOM 用
     const contentHtmlStr: string =
-        typeof pinData?.contentHtml === "string" ? pinData.contentHtml : "";
+        typeof pinData.contentHtml === "string" ? pinData.contentHtml : "";
 
     // 附加图片（拼 HTML）
-    const content = Array.isArray(pinData?.content) ? pinData.content : [];
+    const content = pinData.content ?? [];
     const imgs: string[] = [];
     for (const entry of content) {
         if (entry?.type === "image" && entry?.originalUrl) {
@@ -560,7 +626,13 @@ async function phasePin(app: App, link: string): Promise<ParsedZhihu> {
         }
     }
     const imgsHtml = imgs.length ? `<div>${imgs.join("\n")}</div>` : "";
-    const statistics = pinData?.reaction?.statistics;
+    const statistics = pinData.reaction?.statistics ?? {
+        favorites: 0,
+        likeCount: 0,
+        downVoteCount: 0,
+        upVoteCount: 0,
+        commentCount: 0,
+    };
     const frontmatter: Record<string, FrontmatterValue> = {
         tags: "zhihu-pin",
         "zhihu-title": title,

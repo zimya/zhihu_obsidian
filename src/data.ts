@@ -1,7 +1,13 @@
 import { Vault } from "obsidian";
 const DATA_FILE = "zhihu-data.json";
 
-export async function loadData(vault: Vault): Promise<any> {
+export interface ZhihuData {
+    cookies?: Record<string, string>;
+    userInfo?: { avatar_url: string; name: string; headline?: string };
+    [key: string]: unknown;
+}
+
+export async function loadData(vault: Vault): Promise<ZhihuData> {
     const filePath = `${vault.configDir}/${DATA_FILE}`;
 
     try {
@@ -29,7 +35,7 @@ export async function loadData(vault: Vault): Promise<any> {
     }
 }
 
-export async function saveData(vault: Vault, data: any): Promise<void> {
+export async function saveData(vault: Vault, data: unknown): Promise<void> {
     const filePath = `${vault.configDir}/${DATA_FILE}`;
 
     try {
@@ -43,7 +49,7 @@ export async function saveData(vault: Vault, data: any): Promise<void> {
 
 export async function updateData(
     vault: Vault,
-    patch: Record<string, any>,
+    patch: Record<string, unknown>,
 ): Promise<void> {
     const oldData = (await loadData(vault)) || {};
     const newData = deepMerge(oldData, patch);
@@ -60,15 +66,15 @@ export async function deleteData(vault: Vault, key: string): Promise<void> {
     }
 }
 
-function deepMerge(target: any, source: any): any {
+function deepMerge(target: unknown, source: unknown): unknown {
     if (typeof target !== "object" || target === null) return source;
     if (typeof source !== "object" || source === null) return source;
 
-    const merged: Record<string, any> = { ...target };
+    const merged: Record<string, unknown> = { ...target };
 
     for (const key of Object.keys(source)) {
-        const targetVal = target[key];
-        const sourceVal = source[key];
+        const targetVal = (target as Record<string, unknown>)[key];
+        const sourceVal = (source as Record<string, unknown>)[key];
 
         if (
             typeof targetVal === "object" &&

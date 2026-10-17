@@ -7,8 +7,23 @@ const WEBVIEWER_PLUGIN_ID = "webviewer";
 const WEBVIEWER_VIEW_TYPE = "webviewer";
 const ZHIHU_PREVIEW_LEAF_TAG = "__zhihuPreviewLeaf";
 
-function getWebviewerInstance(app: App): any {
-    const internalPlugins = (app as any).internalPlugins;
+type TaggedLeaf = WorkspaceLeaf & { [ZHIHU_PREVIEW_LEAF_TAG]?: boolean };
+
+interface WebviewerPlugin {
+    enabled?: boolean;
+    instance?: {
+        openUrl(url: string, newWindow: boolean, focus: boolean): void;
+    };
+}
+
+function getWebviewerInstance(app: App) {
+    const internalPlugins = (
+        app as unknown as {
+            internalPlugins?: {
+                getPluginById?(id: string): WebviewerPlugin | undefined;
+            };
+        }
+    ).internalPlugins;
     const plugin = internalPlugins?.getPluginById?.(WEBVIEWER_PLUGIN_ID);
     if (!plugin?.enabled || !plugin?.instance) {
         return null;
@@ -50,11 +65,11 @@ async function createPreview(
     app.workspace.setActiveLeaf(webviewerLeaf, { focus: false });
 
     await webviewerLeaf.setViewState({
-        type: WEBVIEWER_VIEW_TYPE as any,
+        type: WEBVIEWER_VIEW_TYPE,
         active: true,
-    } as any);
+    });
 
-    (webviewerLeaf as any)[ZHIHU_PREVIEW_LEAF_TAG] = true;
+    (webviewerLeaf as TaggedLeaf)[ZHIHU_PREVIEW_LEAF_TAG] = true;
     webviewer.openUrl(previewURL, false, true);
     app.workspace.revealLeaf(webviewerLeaf);
 }
@@ -63,12 +78,10 @@ function getOrCreatePreviewLeaf(
     app: App,
     markdownLeaf: WorkspaceLeaf,
 ): WorkspaceLeaf {
-    const webviewerLeaves = app.workspace.getLeavesOfType(
-        WEBVIEWER_VIEW_TYPE as any,
-    ) as WorkspaceLeaf[];
+    const webviewerLeaves = app.workspace.getLeavesOfType(WEBVIEWER_VIEW_TYPE);
 
-    const taggedLeaf = webviewerLeaves.find(
-        (leaf) => Boolean((leaf as any)[ZHIHU_PREVIEW_LEAF_TAG]),
+    const taggedLeaf = webviewerLeaves.find((leaf) =>
+        Boolean((leaf as TaggedLeaf)[ZHIHU_PREVIEW_LEAF_TAG]),
     );
     if (taggedLeaf) {
         return taggedLeaf;

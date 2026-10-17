@@ -52,7 +52,7 @@ export async function autoCompleteTopic(
     }
 }
 
-export async function topics2Draft(vault: Vault, id: string, topics: any) {
+export async function topics2Draft(vault: Vault, id: string, topics: unknown) {
     try {
         const data = await dataUtil.loadData(vault);
         const settings = await loadSettings(vault);
@@ -64,7 +64,7 @@ export async function topics2Draft(vault: Vault, id: string, topics: any) {
             "captcha_session_v2",
             "z_c0",
         ]);
-        const xsrftoken = data.cookies._xsrf;
+        const xsrftoken = data.cookies?._xsrf ?? "";
         await requestUrl({
             url: `https://zhuanlan.zhihu.com/api/articles/${id}/topics`,
             headers: {

@@ -9,7 +9,7 @@ import {
 import { basicSetup, editorRoot } from "./extensions";
 import { EditorState, Extension } from "@codemirror/state";
 import { EditorView, ViewUpdate } from "@codemirror/view";
-import { loadData, saveData } from "src/data";
+import { loadData, saveData, type ZhihuData } from "src/data";
 import { ConfirmationModal } from "src/settings";
 import i18n, { type Lang } from "locales";
 import { getUserInfo } from "src/login_service";
@@ -18,7 +18,7 @@ const locale = i18n.current;
 
 // Only touch the cookies field: `data` is a snapshot taken when the settings tab was displayed,
 // saving it whole would overwrite newer settings (e.g. typstPresetStyle).
-async function saveCookies(vault: Vault, cookies: any) {
+async function saveCookies(vault: Vault, cookies: ZhihuData["cookies"]) {
     const latest = await loadData(vault);
     latest.cookies = cookies;
     await saveData(vault, latest);
@@ -27,7 +27,7 @@ async function saveCookies(vault: Vault, cookies: any) {
 export async function createCookiesEditor(
     st: PluginSettingTab,
     cookiesSetting: Setting,
-    data: any,
+    data: ZhihuData,
 ) {
     const backupData = JSON.parse(JSON.stringify(data)); // create a deep copy of data
     const customCSSWrapper = cookiesSetting.controlEl.createDiv(

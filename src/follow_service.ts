@@ -51,15 +51,36 @@ export async function getFollows(vault: Vault, url: string) {
     }
 }
 
-export function loadFollows(response: any) {
+interface ZhihuFollowTarget {
+    id: string;
+    type: string;
+    title: string;
+    excerpt: string;
+    excerpt_title: string;
+    content: unknown;
+    content_html: string;
+    created_time: number;
+    created: number;
+    detail: string;
+    author: { name: string };
+    question: { id: string; title: string };
+}
+
+interface ZhihuFollowItem {
+    type: string;
+    action_text: string;
+    target: ZhihuFollowTarget;
+}
+
+export function loadFollows(response: { data: ZhihuFollowItem[] }) {
     try {
         const filteredData = response.data.filter(
-            (item: any) =>
+            (item) =>
                 item.type !== "feed_advert" &&
                 item.target &&
                 Object.keys(item.target).length > 0,
         );
-        return filteredData.map((item: any) => fromTypeGetProperty(item)) as [
+        return filteredData.map((item) => fromTypeGetProperty(item)) as [
             Follow,
         ];
     } catch (error) {
@@ -68,7 +89,7 @@ export function loadFollows(response: any) {
     }
 }
 
-function fromTypeGetProperty(item: any) {
+function fromTypeGetProperty(item: ZhihuFollowItem) {
     switch (item.target.type) {
         case "article":
             return {
@@ -111,7 +132,10 @@ function fromTypeGetProperty(item: any) {
                 id: item.target.id,
                 type: item.target.type,
                 title: truncateString(
-                    stripHtmlTags(item.target.content[0].content),
+                    stripHtmlTags(
+                        (item.target.content as { content: string }[])[0]
+                            .content,
+                    ),
                 ),
                 excerpt: item.target.excerpt_title,
                 author_name: item.target.author.name,

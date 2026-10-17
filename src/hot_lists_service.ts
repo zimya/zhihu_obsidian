@@ -49,17 +49,37 @@ async function getHotLists(vault: Vault) {
     }
 }
 
+interface ZhihuHotListItem {
+    type: string;
+    detail_text: string;
+    target: {
+        id: string;
+        title: string;
+        excerpt: string;
+        url: string;
+        answer_count: number;
+        follower_count: number;
+        type: string;
+        author: { name: string };
+    };
+}
+
+interface ZhihuHotListsResponse {
+    data: ZhihuHotListItem[];
+    fresh_text: string;
+}
+
 export async function loadHotList(vault: Vault) {
     try {
-        const response = await getHotLists(vault);
+        const response: ZhihuHotListsResponse = await getHotLists(vault);
         const filteredData = response.data.filter(
-            (item: any) =>
+            (item) =>
                 item.type === "hot_list_feed" &&
                 item.target &&
                 Object.keys(item.target).length > 0,
         );
         new Notice(response.fresh_text);
-        return filteredData.map((item: any) => ({
+        return filteredData.map((item) => ({
             id: item.target.id,
             title: item.target.title,
             excerpt: item.target.excerpt,
