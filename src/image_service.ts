@@ -445,7 +445,7 @@ async function pollImgStatus(
             break;
         }
 
-        await new Promise((r) => setTimeout(r, intervalMs));
+        await new Promise((r) => window.setTimeout(r, intervalMs));
     }
 
     return getDefaultImgStatus(imgHash);

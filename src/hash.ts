@@ -9,10 +9,9 @@ function toArrayBuffer(data: ArrayBuffer | Uint8Array): ArrayBuffer {
     if (data instanceof ArrayBuffer) {
         return data;
     }
-    return data.buffer.slice(
-        data.byteOffset,
-        data.byteOffset + data.byteLength,
-    ) as ArrayBuffer;
+    const copy = new Uint8Array(data.byteLength);
+    copy.set(data);
+    return copy.buffer;
 }
 
 function wordToHexLE(word: number): string {

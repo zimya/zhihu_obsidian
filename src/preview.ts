@@ -7,8 +7,6 @@ const WEBVIEWER_PLUGIN_ID = "webviewer";
 const WEBVIEWER_VIEW_TYPE = "webviewer";
 const ZHIHU_PREVIEW_LEAF_TAG = "__zhihuPreviewLeaf";
 
-type TaggedLeaf = WorkspaceLeaf & { [ZHIHU_PREVIEW_LEAF_TAG]?: boolean };
-
 interface WebviewerPlugin {
     enabled?: boolean;
     instance?: {
@@ -69,7 +67,7 @@ async function createPreview(
         active: true,
     });
 
-    (webviewerLeaf as TaggedLeaf)[ZHIHU_PREVIEW_LEAF_TAG] = true;
+    Reflect.set(webviewerLeaf, ZHIHU_PREVIEW_LEAF_TAG, true);
     webviewer.openUrl(previewURL, false, true);
     app.workspace.revealLeaf(webviewerLeaf);
 }
@@ -81,7 +79,7 @@ function getOrCreatePreviewLeaf(
     const webviewerLeaves = app.workspace.getLeavesOfType(WEBVIEWER_VIEW_TYPE);
 
     const taggedLeaf = webviewerLeaves.find((leaf) =>
-        Boolean((leaf as TaggedLeaf)[ZHIHU_PREVIEW_LEAF_TAG]),
+        Boolean(Reflect.get(leaf, ZHIHU_PREVIEW_LEAF_TAG)),
     );
     if (taggedLeaf) {
         return taggedLeaf;

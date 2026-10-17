@@ -17,11 +17,11 @@ export function htmlToMd(html: string): string {
             filter: function (node) {
                 return (
                     node.nodeName === "IMG" &&
-                    (node as HTMLElement).getAttribute("eeimg") === "1"
+                    node.getAttribute("eeimg") === "1"
                 );
             },
             replacement: function (content, node) {
-                const alt = (node as HTMLElement).getAttribute("alt") || "";
+                const alt = node.getAttribute("alt") || "";
 
                 // 应该可以假设知乎提供的LaTeX公式是规范的
                 // const escapedAlt = alt.replace(/\$/g, "\\$");
@@ -40,11 +40,11 @@ export function htmlToMd(html: string): string {
             filter: function (node) {
                 return (
                     node.nodeName === "IMG" &&
-                    (node as HTMLElement).getAttribute("eeimg") === "2"
+                    node.getAttribute("eeimg") === "2"
                 );
             },
             replacement: function (content, node) {
-                const alt = (node as HTMLElement).getAttribute("alt") || "";
+                const alt = node.getAttribute("alt") || "";
                 const trimmedAlt = alt.trim();
                 return `$$${trimmedAlt}$$`;
             },
@@ -109,17 +109,16 @@ export function htmlToMd(html: string): string {
             filter: (node) => {
                 return (
                     node.nodeName === "SUP" &&
-                    node instanceof HTMLElement &&
+                    node.instanceOf(HTMLElement) &&
                     typeof node.dataset.text === "string" &&
                     typeof node.dataset.url === "string" &&
                     /^\[\d+\]$/.test(node.textContent || "")
                 );
             },
             replacement: function (content, node) {
-                const el = node as HTMLElement;
-                const numero = el.dataset.numero ?? "1";
+                const numero = node.dataset.numero ?? "1";
                 const label = `[^${numero}]`;
-                const footnoteText = `${el.dataset.text} ${el.dataset.url}`;
+                const footnoteText = `${node.dataset.text} ${node.dataset.url}`;
                 footnotes[numero] = footnoteText;
                 return label;
             },
