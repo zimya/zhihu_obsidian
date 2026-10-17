@@ -14,6 +14,7 @@ const table = (body: string) => `| 名称 | 公式 |\n| :--- | ---: |\n${body}`;
 const parseTable = (md: string) => parser().parse(md).children[0] as Table;
 const valid = { status: 200, headers: { 'Content-Type': 'image/svg+xml; charset=utf-8' }, text: '<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0"/></svg>' };
 const errorSvg = readFileSync(new URL('./fixtures/zhihu-equation-error.svg', import.meta.url), 'utf8');
+(globalThis as any).window = { setTimeout: globalThis.setTimeout.bind(globalThis), clearTimeout: globalThis.clearTimeout.bind(globalThis) };
 
 test('a trailing TeX comment cannot consume the generated cell/row delimiters', async () => {
     const formula = String.raw`x % a valid TeX comment`;
