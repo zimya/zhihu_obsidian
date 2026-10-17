@@ -153,15 +153,14 @@ function DefaultSaveFolderSetting(
     setting.nameEl.createEl("code", { text: ` ${folder}` });
     setting.addButton((btn) =>
         btn.setButtonText(locale.ui.choose).onClick(() => {
-            new FolderSuggestModal(tab.app, async (selectedFolder) => {
-                try {
-                    await saveSettings(tab.app.vault, {
-                        defaultSaveFolder: selectedFolder.path,
+            new FolderSuggestModal(tab.app, (selectedFolder) => {
+                void saveSettings(tab.app.vault, {
+                    defaultSaveFolder: selectedFolder.path,
+                })
+                    .then(() => tab.display())
+                    .catch((error: unknown) => {
+                        console.error("Failed to set default folder", error);
                     });
-                    tab.display();
-                } catch (e) {
-                    console.error("Failed to set default folder", e);
-                }
             }).open();
         }),
     );

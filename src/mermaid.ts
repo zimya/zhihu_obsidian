@@ -78,16 +78,17 @@ export async function svgToPngBuffer(
             ctx.drawImage(image, 0, 0, originalWidth, originalHeight);
 
             // 从高分辨率的Canvas导出Blob
-            canvas.toBlob(async (blob) => {
+            canvas.toBlob((blob) => {
                 // 释放之前创建的URL对象，避免内存泄漏
                 URL.revokeObjectURL(dataUrl);
 
                 if (!blob) {
                     return reject(new Error(locale.error.generateBlobFailed));
                 }
-                const arrayBuffer = await blob.arrayBuffer();
-                const buffer = Buffer.from(arrayBuffer);
-                resolve(buffer);
+                void blob
+                    .arrayBuffer()
+                    .then((arrayBuffer) => resolve(Buffer.from(arrayBuffer)))
+                    .catch(reject);
             }, "image/png");
         };
 

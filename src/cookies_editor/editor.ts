@@ -58,7 +58,7 @@ export async function createCookiesEditor(
         );
     }
 
-    const change = EditorView.updateListener.of(async (v: ViewUpdate) => {
+    const change = EditorView.updateListener.of((v: ViewUpdate) => {
         if (v.docChanged) {
             const cookies = v.state.doc.toString();
 
@@ -73,7 +73,11 @@ export async function createCookiesEditor(
             updateValidityIndicator(success);
 
             if (!success) return;
-            await saveCookies(st.app.vault, parsedCookies);
+            void saveCookies(st.app.vault, parsedCookies).catch(
+                (error: unknown) => {
+                    console.error("Failed to save cookies", error);
+                },
+            );
         }
     });
 
@@ -94,7 +98,7 @@ export async function createCookiesEditor(
     reset
         .setIcon("arrow-left-right")
         .setTooltip(locale.settings.editorResetTooltip)
-        .onClick(async () => {
+        .onClick(() => {
             new ConfirmationModal(
                 st.app,
                 locale.settings.editorResetWarning,

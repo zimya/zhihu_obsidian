@@ -13,10 +13,12 @@ export async function createTypstEditor(
     const customCSSWrapper = setting.controlEl.createDiv(
         "typst-editor-wrapper",
     );
-    const change = EditorView.updateListener.of(async (v: ViewUpdate) => {
+    const change = EditorView.updateListener.of((v: ViewUpdate) => {
         if (v.docChanged) {
-            await saveSettings(st.app.vault, {
+            void saveSettings(st.app.vault, {
                 typstPresetStyle: v.state.doc.toString(),
+            }).catch((error: unknown) => {
+                console.error("Failed to save Typst preset style", error);
             });
         }
     });

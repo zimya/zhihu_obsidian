@@ -14,9 +14,9 @@ const locale: Lang = i18n.current;
 
 export class ZhihuQuestionLinkModal extends Modal {
     inputEl: TextComponent;
-    onSubmit: (input: string) => void;
+    onSubmit: (input: string) => void | Promise<void>;
 
-    constructor(app: App, onSubmit: (input: string) => void) {
+    constructor(app: App, onSubmit: (input: string) => void | Promise<void>) {
         super(app);
         this.onSubmit = onSubmit;
     }
@@ -42,7 +42,15 @@ export class ZhihuQuestionLinkModal extends Modal {
                         return;
                     }
                     this.close();
-                    this.onSubmit(value);
+                    void Promise.resolve()
+                        .then(() => this.onSubmit(value))
+                        .catch((error: unknown) => {
+                            new Notice(
+                                error instanceof Error
+                                    ? error.message
+                                    : locale.error.unknownError,
+                            );
+                        });
                 }
             },
         );

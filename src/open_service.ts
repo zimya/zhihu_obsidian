@@ -747,14 +747,22 @@ export class ZhihuInputLinkModal extends Modal {
         // 添加键盘事件监听
         this.inputEl.inputEl.addEventListener(
             "keydown",
-            async (event: KeyboardEvent) => {
+            (event: KeyboardEvent) => {
                 if (event.key !== "Enter") return;
                 const value = this.inputEl.getValue().trim();
-                await new ZhihuOpener(this.app).open({
-                    url: value,
-                    overwrite: this.overwrite,
-                });
-                this.close();
+                void new ZhihuOpener(this.app)
+                    .open({
+                        url: value,
+                        overwrite: this.overwrite,
+                    })
+                    .then(() => this.close())
+                    .catch((error: unknown) => {
+                        new Notice(
+                            error instanceof Error
+                                ? error.message
+                                : locale.error.unknownError,
+                        );
+                    });
             },
         );
 
@@ -801,12 +809,12 @@ export class ZhihuInputLinkModal extends Modal {
             }
         })();
 
-        toggle.onChange(async (value) => {
-            try {
-                await saveSettings(this.app.vault, { turnImgOffline: value });
-            } catch (e) {
-                console.error("save settings failed:", e);
-            }
+        toggle.onChange((value) => {
+            void saveSettings(this.app.vault, { turnImgOffline: value }).catch(
+                (error: unknown) => {
+                    console.error("save settings failed:", error);
+                },
+            );
         });
     }
 
@@ -935,8 +943,8 @@ export class ZhihuBatchLinkModal extends Modal {
         const startBtn = new ButtonComponent(footer);
         startBtn.setButtonText(locale.ui.begin);
         startBtn.setCta();
-        startBtn.onClick(async () => {
-            await this.runBatch();
+        startBtn.onClick(() => {
+            void this.runBatch();
         });
     }
 

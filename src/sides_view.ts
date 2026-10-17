@@ -215,25 +215,27 @@ export class ZhihuSideView extends View {
             });
             excerpt.appendText(": " + recommendation.excerpt);
 
-            item.onClickEvent(async () => {
-                if (settings.sendReadToZhihu !== false) {
-                    await touchToRead(
-                        this.vault,
-                        recommendation.type,
-                        recommendation.id,
-                    );
-                }
-                const opener = new ZhihuOpener(this.app);
-                const zhType = asZhihuType(recommendation.type);
-                if (!zhType) return;
-                const req: ZhihuOpenRequest = {
-                    url: recommendation.url,
-                    type: zhType,
-                    destFolder: settings.defaultSaveFolder,
-                    offlineImages: settings.turnImgOffline,
-                    overwrite: true,
-                };
-                await opener.open(req);
+            item.onClickEvent(() => {
+                this.handleAction(async () => {
+                    if (settings.sendReadToZhihu !== false) {
+                        await touchToRead(
+                            this.vault,
+                            recommendation.type,
+                            recommendation.id,
+                        );
+                    }
+                    const opener = new ZhihuOpener(this.app);
+                    const zhType = asZhihuType(recommendation.type);
+                    if (!zhType) return;
+                    const req: ZhihuOpenRequest = {
+                        url: recommendation.url,
+                        type: zhType,
+                        destFolder: settings.defaultSaveFolder,
+                        offlineImages: settings.turnImgOffline,
+                        overwrite: true,
+                    };
+                    await opener.open(req);
+                });
             });
         });
     }
@@ -269,22 +271,34 @@ export class ZhihuSideView extends View {
             });
             excerpt.appendText(": " + follow.excerpt);
 
-            item.onClickEvent(async () => {
-                if (settings.sendReadToZhihu !== false) {
-                    await touchToRead(this.vault, follow.type, follow.id);
-                }
-                const opener = new ZhihuOpener(this.app);
-                const zhType = asZhihuType(follow.type);
-                if (!zhType) return;
-                const req: ZhihuOpenRequest = {
-                    url: follow.url,
-                    type: zhType,
-                    destFolder: settings.defaultSaveFolder,
-                    offlineImages: settings.turnImgOffline,
-                    overwrite: true,
-                };
-                await opener.open(req);
+            item.onClickEvent(() => {
+                this.handleAction(async () => {
+                    if (settings.sendReadToZhihu !== false) {
+                        await touchToRead(this.vault, follow.type, follow.id);
+                    }
+                    const opener = new ZhihuOpener(this.app);
+                    const zhType = asZhihuType(follow.type);
+                    if (!zhType) return;
+                    const req: ZhihuOpenRequest = {
+                        url: follow.url,
+                        type: zhType,
+                        destFolder: settings.defaultSaveFolder,
+                        offlineImages: settings.turnImgOffline,
+                        overwrite: true,
+                    };
+                    await opener.open(req);
+                });
             });
+        });
+    }
+
+    private handleAction(action: () => Promise<void>): void {
+        void action().catch((error: unknown) => {
+            new Notice(
+                error instanceof Error
+                    ? error.message
+                    : locale.error.unknownError,
+            );
         });
     }
 
@@ -297,7 +311,7 @@ export class ZhihuSideView extends View {
         const settings = await loadSettings(this.vault);
         list.empty();
         this.hotLists = await loadHotList(this.vault);
-        this.hotLists.forEach(async (hot) => {
+        this.hotLists.forEach((hot) => {
             const item = list.createEl("li");
             item.addClass("side-item");
             item.setAttr("aria-label", `${hot.title}\n${hot.detail_text}`);
@@ -311,18 +325,20 @@ export class ZhihuSideView extends View {
                 text: `🔥${hot.detail_text}🔥`,
             });
             excerpt.appendText(": " + hot.excerpt);
-            item.onClickEvent(async () => {
-                const opener = new ZhihuOpener(this.app);
-                const zhType = asZhihuType(hot.type);
-                if (!zhType) return;
-                const req: ZhihuOpenRequest = {
-                    url: hot.link,
-                    type: zhType,
-                    destFolder: settings.defaultSaveFolder,
-                    offlineImages: settings.turnImgOffline,
-                    overwrite: true,
-                };
-                await opener.open(req);
+            item.onClickEvent(() => {
+                this.handleAction(async () => {
+                    const opener = new ZhihuOpener(this.app);
+                    const zhType = asZhihuType(hot.type);
+                    if (!zhType) return;
+                    const req: ZhihuOpenRequest = {
+                        url: hot.link,
+                        type: zhType,
+                        destFolder: settings.defaultSaveFolder,
+                        offlineImages: settings.turnImgOffline,
+                        overwrite: true,
+                    };
+                    await opener.open(req);
+                });
             });
         });
     }
