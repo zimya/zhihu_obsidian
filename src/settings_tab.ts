@@ -61,14 +61,14 @@ function AccountSetting(containerEl: HTMLElement, tab: ZhihuSettingTab) {
         const { isLoggedIn, userInfo } = await fetchUserStatus(tab.app.vault);
         tab.isLoggedIn = isLoggedIn;
         tab.userInfo = userInfo;
-        tab.display();
+        await tab.display();
     }
 
     async function handleLogout() {
         await deleteData(tab.app.vault, "userInfo");
         tab.isLoggedIn = false;
         tab.userInfo = null;
-        tab.display();
+        await tab.display();
     }
 
     async function handleRefresh() {
@@ -80,7 +80,7 @@ function AccountSetting(containerEl: HTMLElement, tab: ZhihuSettingTab) {
         tab.isLoggedIn = false;
         tab.userInfo = null;
         new Notice(locale.settings.clearLoginSuccess);
-        tab.display();
+        await tab.display();
     }
 
     new Setting(containerEl)
@@ -444,7 +444,7 @@ function ManualCookieToggle(
         .setDesc(locale.settings.editCookiesDesc)
         .addToggle((toggle) =>
             toggle.setValue(manualCookieEdit).onChange(async (value) => {
-                handleToggle(value);
+                await handleToggle(value);
             }),
         );
 }
@@ -734,7 +734,7 @@ export class ZhihuSettingTab extends PluginSettingTab {
             containerEl,
             sts.manualCookieEdit,
         );
-        createCookiesEditor(this, cookiesEditor, data);
+        await createCookiesEditor(this, cookiesEditor, data);
         // 打开或关闭 Typst 模式的按钮
         TypstModeToggle(this, containerEl, sts.typstMode, () => [
             typstPPISetting,
@@ -773,6 +773,6 @@ export class ZhihuSettingTab extends PluginSettingTab {
         );
         // Typst 的公式样式设置，包含一个 Typst 编辑器
         const typstEditor = TypstEditor(this, containerEl, sts.typstMode);
-        createTypstEditor(this, typstEditor, sts.typstPresetStyle);
+        await createTypstEditor(this, typstEditor, sts.typstPresetStyle);
     }
 }

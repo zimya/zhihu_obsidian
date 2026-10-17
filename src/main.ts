@@ -81,8 +81,24 @@ export default class ZhihuObPlugin extends Plugin {
                 document,
                 "click",
                 (e) => {
-                    open.clickInReadMode(this.app, e); // 在阅读模式下自动打开链接
-                    open.clickInPreview(this, e); // 在Live Preview模式下自动打开链接
+                    void open
+                        .clickInReadMode(this.app, e)
+                        .catch((error: unknown) => {
+                            new Notice(
+                                error instanceof Error
+                                    ? error.message
+                                    : this.i18n.error.unknownError,
+                            );
+                        }); // 在阅读模式下自动打开链接
+                    void open
+                        .clickInPreview(this, e)
+                        .catch((error: unknown) => {
+                            new Notice(
+                                error instanceof Error
+                                    ? error.message
+                                    : this.i18n.error.unknownError,
+                            );
+                        }); // 在Live Preview模式下自动打开链接
                 },
                 true,
             );
@@ -96,7 +112,7 @@ export default class ZhihuObPlugin extends Plugin {
         loadIcons();
         this.addRibbonIcon("zhihu-icon", "Open Zhihu side view", async () => {
             if (await login.checkIsUserLogin(this.app.vault)) {
-                side.activateSideView(this.app);
+                await side.activateSideView(this.app);
             } else {
                 new Notice(loginNoticeStr);
             }
@@ -110,7 +126,7 @@ export default class ZhihuObPlugin extends Plugin {
             name: "Open side view",
             callback: async () => {
                 if (await login.checkIsUserLogin(this.app.vault)) {
-                    side.activateSideView(this.app);
+                    await side.activateSideView(this.app);
                 } else {
                     new Notice(loginNoticeStr);
                 }

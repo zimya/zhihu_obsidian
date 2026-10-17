@@ -383,12 +383,16 @@ async function extractCookiesAfterNavigation(
             detachDebugger = () => {
                 try {
                     wc.debugger?.removeListener?.("message", handler);
-                } catch {}
+                } catch {
+                    // Listener removal is best-effort during cleanup.
+                }
                 try {
                     if (wc.debugger?.isAttached?.()) {
                         wc.debugger?.detach?.();
                     }
-                } catch {}
+                } catch {
+                    // Detaching an already-closed webview is harmless.
+                }
             };
 
             wc.debugger?.attach?.("1.3");
@@ -421,7 +425,7 @@ async function extractCookiesAfterNavigation(
             if (finished) return;
             finished = true;
             cleanup();
-            reject(error);
+            reject(error instanceof Error ? error : new Error(String(error)));
         };
 
         const finishWithCookies = (cookies: Record<string, string>) => {
@@ -457,7 +461,11 @@ async function extractCookiesAfterNavigation(
             finishWithCookies(cookieObj);
         };
 
-        const onLoad = async () => {
+        const onLoad = (): void => {
+            void handleLoad();
+        };
+
+        const handleLoad = async (): Promise<void> => {
             try {
                 const url = webviewEl.getURL?.() ?? "";
 

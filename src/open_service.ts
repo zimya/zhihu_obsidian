@@ -441,11 +441,11 @@ function parseInitialDataJsonFromDocument(doc: Document): ZhihuInitialData {
     if (!scriptTag) throw new Error("js-initialData script tag not found");
     const jsonText = scriptTag.textContent;
     if (!jsonText) throw new Error("js-initialData is empty");
-    const parsed: unknown = JSON.parse(jsonText);
+    const parsed = JSON.parse(jsonText);
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
         throw new Error("js-initialData must contain a JSON object");
     }
-    return parsed as ZhihuInitialData;
+    return parsed;
 }
 
 /**
@@ -800,7 +800,7 @@ export class ZhihuInputLinkModal extends Modal {
         const toggle = new ToggleComponent(row);
 
         // 初始化 toggle
-        (async () => {
+        void (async () => {
             try {
                 const settings = await loadSettings(this.app.vault);
                 toggle.setValue(!!settings.turnImgOffline);

@@ -69,7 +69,7 @@ async function createPreview(
 
     Reflect.set(webviewerLeaf, ZHIHU_PREVIEW_LEAF_TAG, true);
     webviewer.openUrl(previewURL, false, true);
-    app.workspace.revealLeaf(webviewerLeaf);
+    await app.workspace.revealLeaf(webviewerLeaf);
 }
 
 function getOrCreatePreviewLeaf(

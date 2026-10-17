@@ -11,13 +11,9 @@ export function mathPlugin(this: Processor) {
         fromMarkdownExtensions?: ReturnType<typeof mathFromMarkdown>[];
         toMarkdownExtensions?: ReturnType<typeof mathToMarkdown>[];
     };
-    const options = this as unknown as Parameters<typeof math>[0];
-    const markdownOptions = this as unknown as Parameters<
-        typeof mathToMarkdown
-    >[0];
-    (data.micromarkExtensions ||= []).push(math(options));
+    (data.micromarkExtensions ||= []).push(math());
     (data.fromMarkdownExtensions ||= []).push(mathFromMarkdown());
-    (data.toMarkdownExtensions ||= []).push(mathToMarkdown(markdownOptions));
+    (data.toMarkdownExtensions ||= []).push(mathToMarkdown());
 }
 
 export function zhihuEquationUrl(eq: string): string {

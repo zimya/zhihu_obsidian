@@ -17,7 +17,7 @@ export async function activateSideView(app: App) {
     const { workspace } = app;
     const existingLeaf = workspace.getLeavesOfType(SIDES_VIEW_TYPE)[0];
     if (existingLeaf) {
-        workspace.revealLeaf(existingLeaf);
+        await workspace.revealLeaf(existingLeaf);
         return;
     }
     let leaf: WorkspaceLeaf | null = workspace.getLeftLeaf(false);
@@ -31,7 +31,7 @@ export async function activateSideView(app: App) {
             type: SIDES_VIEW_TYPE,
             active: true,
         });
-        workspace.revealLeaf(leaf);
+        await workspace.revealLeaf(leaf);
     } else {
         new Notice(`${locale.notice.openZhihuSideFailed}`);
         console.error(locale.error.noLeafAvailable);
@@ -68,7 +68,7 @@ export class ZhihuSideView extends View {
     }
 
     async onOpen() {
-        this.render();
+        await this.render();
     }
 
     async render() {
@@ -91,7 +91,9 @@ export class ZhihuSideView extends View {
         setIcon(recom_prev_icon, "arrow-left");
         recom_prev_icon.onClickEvent((e) => {
             e.preventDefault();
-            this.refreshRecommendations(this.prevRecommendUrl);
+            this.handleAction(() =>
+                this.refreshRecommendations(this.prevRecommendUrl),
+            );
         });
         const recom_refresh_icon = recom_icon_container.createEl("span");
         recom_refresh_icon.addClass("side-icon");
@@ -99,7 +101,9 @@ export class ZhihuSideView extends View {
         setIcon(recom_refresh_icon, "refresh-cw");
         recom_refresh_icon.onClickEvent((e) => {
             e.preventDefault();
-            this.refreshRecommendations(this.recommendUrl);
+            this.handleAction(() =>
+                this.refreshRecommendations(this.recommendUrl),
+            );
         });
         const recom_next_icon = recom_icon_container.createEl("span");
         recom_next_icon.addClass("side-icon");
@@ -107,7 +111,9 @@ export class ZhihuSideView extends View {
         setIcon(recom_next_icon, "arrow-right");
         recom_next_icon.onClickEvent((e) => {
             e.preventDefault();
-            this.refreshRecommendations(this.nextRecommendUrl);
+            this.handleAction(() =>
+                this.refreshRecommendations(this.nextRecommendUrl),
+            );
         });
 
         const recom_list_container = recom_details.createEl("div");
@@ -132,7 +138,7 @@ export class ZhihuSideView extends View {
         setIcon(follow_prev_icon, "arrow-left");
         follow_prev_icon.onClickEvent((e) => {
             e.preventDefault();
-            this.refreshFollows(this.prevFollowUrl);
+            this.handleAction(() => this.refreshFollows(this.prevFollowUrl));
         });
         const follow_refresh_icon = follow_icon_container.createEl("span");
         follow_refresh_icon.addClass("side-icon");
@@ -140,7 +146,7 @@ export class ZhihuSideView extends View {
         setIcon(follow_refresh_icon, "refresh-cw");
         follow_refresh_icon.onClickEvent((e) => {
             e.preventDefault();
-            this.refreshFollows(this.followUrl);
+            this.handleAction(() => this.refreshFollows(this.followUrl));
         });
         const follow_next_icon = follow_icon_container.createEl("span");
         follow_next_icon.addClass("side-icon");
@@ -148,7 +154,7 @@ export class ZhihuSideView extends View {
         setIcon(follow_next_icon, "arrow-right");
         follow_next_icon.onClickEvent((e) => {
             e.preventDefault();
-            this.refreshFollows(this.nextFollowUrl);
+            this.handleAction(() => this.refreshFollows(this.nextFollowUrl));
         });
 
         const follow_list_container = follow_details.createEl("div");
@@ -171,7 +177,7 @@ export class ZhihuSideView extends View {
         setIcon(hotlist_refresh_icon, "refresh-cw");
         hotlist_refresh_icon.onClickEvent((e) => {
             e.preventDefault();
-            this.refreshHotLists();
+            this.handleAction(() => this.refreshHotLists());
         });
 
         const hotlist_container = hotlist_details.createEl("div");

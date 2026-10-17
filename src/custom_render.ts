@@ -527,9 +527,8 @@ export async function remarkMdToHTML(app: App, md: string) {
         },
         // Obsidian callout语法支持
         blockquote(state: State, node: Blockquote): Element {
-            const renderNode = node as RenderNode;
             // 如果不存在callout，说明是普通引用块，则返回原本结果
-            if (renderNode.data?.hProperties?.dataCallout === undefined) {
+            if (node.data?.hProperties?.dataCallout === undefined) {
                 return {
                     type: "element",
                     tagName: "blockquote",
@@ -537,7 +536,7 @@ export async function remarkMdToHTML(app: App, md: string) {
                     children: state.all(node),
                 };
             }
-            const props = renderNode.data?.hProperties || {};
+            const props = node.data?.hProperties || {};
             // ignore类型直接返回空 p
             // EXAMPLE:
             // > [!ignore] Title
@@ -553,30 +552,36 @@ export async function remarkMdToHTML(app: App, md: string) {
             }
 
             // 找到标题段落（带有 dataCalloutTitle）
-            const titleParagraph = (renderNode.children ?? []).find(
-                (child: RenderNode) =>
-                    child.data?.hProperties?.dataCalloutTitle,
+            const titleParagraph = node.children.find(
+                (child) => child.data?.hProperties?.dataCalloutTitle,
             );
 
             // 提取标题文本
-            const titleText = titleParagraph?.children?.[0]?.value ?? "";
+            const titleChild =
+                titleParagraph && "children" in titleParagraph
+                    ? titleParagraph.children[0]
+                    : undefined;
+            const titleText =
+                titleChild && "value" in titleChild
+                    ? String(titleChild.value ?? "")
+                    : "";
 
             // 提取正文（去掉 title 节点和嵌套 blockquote）
-            const contentNodes = (renderNode.children ?? [])
-                .filter((child: RenderNode) => {
+            const contentNodes = node.children
+                .filter((child) => {
                     const hName = child.data?.hName;
                     return (
                         hName !== "div" ||
                         !child.data?.hProperties?.dataCalloutTitle
                     );
                 })
-                .flatMap((child: RenderNode) => {
+                .flatMap((child) => {
                     // 若是嵌套 blockquote 包含 dataCalloutBody，取其子项
                     if (
                         child.type === "blockquote" &&
                         child.data?.hProperties?.dataCalloutBody
                     ) {
-                        return child.children ?? [];
+                        return child.children;
                     }
                     return [child];
                 });
@@ -595,7 +600,7 @@ export async function remarkMdToHTML(app: App, md: string) {
                     ...state.all({
                         type: "root",
                         children: contentNodes,
-                    } as Root),
+                    }),
                 ],
             };
         },

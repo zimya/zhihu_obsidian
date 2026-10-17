@@ -53,8 +53,11 @@ export function fmtDate(date: Date): string {
 export function execFileAsync(cmd: string, args: string[]) {
     return new Promise<void>((resolve, reject) => {
         execFile(cmd, args, (err) => {
-            if (err) reject(err);
-            else resolve();
+            if (err) {
+                reject(err instanceof Error ? err : new Error(String(err)));
+            } else {
+                resolve();
+            }
         });
     });
 }

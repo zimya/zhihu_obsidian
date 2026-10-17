@@ -109,13 +109,15 @@ export class ConfirmationModal extends Modal {
         const contentDiv = this.contentEl.createDiv();
         const component = new (class extends Component {})();
 
-        MarkdownRenderer.render(
+        void MarkdownRenderer.render(
             this.app,
             bodyMarkdown,
             contentDiv,
             "",
             component,
-        );
+        ).catch((error: unknown) => {
+            console.error("Failed to render confirmation modal content", error);
+        });
 
         new Setting(this.contentEl)
             .addButton((button: ButtonComponent) => {

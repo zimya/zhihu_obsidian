@@ -102,12 +102,13 @@ export async function createCookiesEditor(
             new ConfirmationModal(
                 st.app,
                 locale.settings.editorResetWarning,
-                (button) =>
+                (button) => {
                     button
                         .setButtonText(
                             locale.settings.editorResetWarningButtonText,
                         )
-                        .setWarning(),
+                        .setWarning();
+                },
                 async () => {
                     this.cookiesEditor.setState(
                         EditorState.create({
