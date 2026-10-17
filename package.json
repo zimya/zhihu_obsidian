@@ -69,5 +69,8 @@
         "unist-util-remove": "^4.0.0",
         "unist-util-visit": "^5.0.0",
         "uuid": "^11.1.0"
+    },
+    "engines": {
+        "node": ">=22"
     }
 }
