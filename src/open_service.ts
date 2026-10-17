@@ -4,7 +4,6 @@ import {
     Notice,
     TFile,
     requestUrl,
-    Platform,
     Modal,
     TextComponent,
     ButtonComponent,

@@ -1,5 +1,3 @@
-import { Vault } from "obsidian";
-
 export function getCookiesFromHeader(response: {
     headers: Record<string, string | string[] | undefined>;
 }): { [key: string]: string } {

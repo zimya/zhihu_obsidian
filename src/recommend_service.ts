@@ -3,7 +3,7 @@ import * as dataUtil from "./data";
 import { Vault, Notice, requestUrl } from "obsidian";
 import { loadSettings } from "./settings";
 import i18n, { type Lang } from "../locales";
-const locale = i18n.current;
+const locale: Lang = i18n.current;
 export interface Recommendation {
     id: string;
     type: string;
@@ -48,7 +48,7 @@ export async function getRecommend(vault: Vault, url: string) {
             method: "GET",
         });
         return response.json;
-    } catch (error) {
+    } catch {
         new Notice(`${locale.notice.fetchRecommendFailed}`);
     }
 }

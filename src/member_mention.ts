@@ -12,7 +12,7 @@ import {
 } from "obsidian";
 import { loadSettings } from "./settings";
 import i18n, { type Lang } from "../locales";
-const locale = i18n.current;
+const locale: Lang = i18n.current;
 // 定义 autoCompletePeople 返回的数据结构
 interface PeopleEntry {
     type: string;
@@ -68,7 +68,7 @@ export async function autoCompletePeople(
             numbers: entry[6],
             empty: entry[7],
         }));
-    } catch (error) {
+    } catch {
         new Notice(`${locale.notice.fetchMembersFailed}`);
         return [];
     }

@@ -4,7 +4,6 @@ import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 import remarkRehype from "remark-rehype";
 import rehypeStringify from "rehype-stringify";
-import rehypeFormat from "rehype-format";
 import { wikiLink, wikiImgLink } from "micromark-extension-wiki-link";
 import * as muwl from "mdast-util-wiki-link";
 import { visit } from "unist-util-visit";
@@ -29,7 +28,6 @@ import { getOnlineImg, getZhihuImg, getImgDimensions } from "./image_service";
 import * as file from "./files";
 import * as path from "path";
 import remarkCallout from "@r4ai/remark-callout";
-import remarkBreaks from "remark-breaks";
 import { mathPlugin, zhihuEquation } from "./math";
 import {
     prepareMathTables,
@@ -276,7 +274,7 @@ export const remarkTypst: Plugin<[App], Parent, Parent> = (app) => {
             try {
                 const tex = typst2tex(typst);
                 mathNode.value = tex;
-            } catch (e) {
+            } catch {
                 console.error(`Typst inline math ${typst} conversion failed`);
                 new Notice(`${locale.notice.inlineTypstConvertFailed}`);
             }
@@ -307,7 +305,7 @@ export const remarkTypst: Plugin<[App], Parent, Parent> = (app) => {
                 try {
                     const tex = typst2tex(typstEq);
                     mathNode.value = tex;
-                } catch (e) {
+                } catch {
                     console.error(
                         `Typst display math ${typstEq} conversion failed`,
                     );

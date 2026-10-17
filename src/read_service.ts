@@ -3,7 +3,7 @@ import * as dataUtil from "./data";
 import { Vault, Notice, requestUrl } from "obsidian";
 import { loadSettings } from "./settings";
 import i18n, { type Lang } from "../locales";
-const locale = i18n.current;
+const locale: Lang = i18n.current;
 export async function touchToRead(vault: Vault, type: string, id: string) {
     try {
         const data = await dataUtil.loadData(vault);
@@ -43,7 +43,7 @@ export async function touchToRead(vault: Vault, type: string, id: string) {
             }),
         });
         return response.json;
-    } catch (error) {
+    } catch {
         new Notice(`${locale.notice.touchToReadFailed}`);
     }
 }

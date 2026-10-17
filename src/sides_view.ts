@@ -9,7 +9,7 @@ import { HotList, loadHotList } from "./hot_lists_service";
 import { touchToRead } from "./read_service";
 import { loadSettings } from "./settings";
 import i18n, { type Lang } from "../locales";
-const locale = i18n.current;
+const locale: Lang = i18n.current;
 export const SIDES_VIEW_TYPE = "zhihu-sides-view";
 import { ZhihuOpener, asZhihuType, ZhihuOpenRequest } from "./open_service";
 

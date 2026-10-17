@@ -3,7 +3,7 @@ import * as dataUtil from "./data";
 import * as cookies from "./cookies";
 import { loadSettings } from "./settings";
 import i18n, { type Lang } from "../locales";
-const locale = i18n.current;
+const locale: Lang = i18n.current;
 export async function autoCompleteTopic(
     vault: Vault,
     id: string,
@@ -91,7 +91,7 @@ export async function topics2Draft(vault: Vault, id: string, topics: unknown) {
         });
         new Notice(`${locale.notice.giveTopicSuccess}`);
         // return response.json
-    } catch (error) {
+    } catch {
         new Notice(`${locale.notice.giveTopicFailed}`);
     }
 }

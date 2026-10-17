@@ -1,4 +1,4 @@
-import { App, Vault, Notice, requestUrl, normalizePath } from "obsidian";
+import { App, Vault, Notice, requestUrl } from "obsidian";
 import * as dataUtil from "./data";
 import * as topicsUtil from "./topics";
 import * as fm from "./frontmatter";

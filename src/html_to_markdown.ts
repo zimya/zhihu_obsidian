@@ -1,6 +1,6 @@
 import TurndownService from "turndown";
 import i18n, { type Lang } from "../locales";
-const locale = i18n.current;
+const locale: Lang = i18n.current;
 export function htmlToMd(html: string): string {
     try {
         const turndownService = new TurndownService({

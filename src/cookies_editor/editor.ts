@@ -14,7 +14,7 @@ import { ConfirmationModal } from "src/settings";
 import i18n, { type Lang } from "locales";
 import { getUserInfo } from "src/login_service";
 
-const locale = i18n.current;
+const locale: Lang = i18n.current;
 
 // Only touch the cookies field: `data` is a snapshot taken when the settings tab was displayed,
 // saving it whole would overwrite newer settings (e.g. typstPresetStyle).
@@ -66,7 +66,7 @@ export async function createCookiesEditor(
             let parsedCookies;
             try {
                 parsedCookies = JSON.parse(cookies);
-            } catch (e) {
+            } catch {
                 success = false;
             }
 
@@ -129,7 +129,7 @@ export async function createCookiesEditor(
             try {
                 await getUserInfo(st.app.vault);
                 st.display();
-            } catch (error) {
+            } catch {
                 new Notice(locale.settings.editorRefreshFailedNotice);
             }
         });

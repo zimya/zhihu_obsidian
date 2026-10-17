@@ -19,7 +19,7 @@ import { loadSettings } from "./settings";
 import * as open from "./open_service";
 import i18n, { type Lang } from "../locales";
 import { registerMenuCommands } from "./menu";
-import { ViewPlugin, ViewUpdate, EditorView } from "@codemirror/view";
+import { ViewPlugin } from "@codemirror/view";
 import { zhihuDesktopPreview } from "./preview";
 import { scheduleUpdateStatusBar } from "./statusbar";
 import * as path from "path";
