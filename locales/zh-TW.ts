@@ -100,6 +100,9 @@ export default {
         giveTopicFailed: "新增話題失敗：",
         openZhihuSideFailed: "開啟知乎側邊欄失敗：無法建立側邊面板。",
         typstNotFound: "未找到 Typst",
+        mathTableKeptNative: "含公式的表格中存在連結、圖片或不支援的格式，已保留原生表格，其中公式仍可能無法在知乎顯示。將這些內容移到表格外後即可自動轉為 array 公式。",
+        mathTableTooLarge: "公式表格的表頭或單行過長，無法產生公式請求，已保留原生表格，其中公式仍可能無法顯示。請縮短儲存格內容或減少每張表格的欄數。",
+        mathTableRenderFailed: "知乎未能渲染公式表格，或渲染檢查請求失敗、逾時，已保留原生表格，其中公式仍可能無法顯示。請檢查公式語法和網路後重試。",
         typstPathEmpty: "Typst 路徑為空",
         typstVersion: "Typst 版本",
         inlineTypstConvertFailed:

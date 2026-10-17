@@ -1,0 +1,182 @@
+[
+  {
+    "name": "moe",
+    "urlLength": 2038,
+    "status": 200,
+    "type": "image/svg+xml",
+    "rendered": true,
+    "expected": true,
+    "width": "83.933ex",
+    "height": "28.343ex"
+  },
+  {
+    "name": "comment-fixed",
+    "urlLength": 304,
+    "status": 200,
+    "type": "image/svg+xml",
+    "rendered": true,
+    "expected": true,
+    "width": "13.999ex",
+    "height": "7.676ex"
+  },
+  {
+    "name": "escaped-percent",
+    "urlLength": 301,
+    "status": 200,
+    "type": "image/svg+xml",
+    "rendered": true,
+    "expected": true,
+    "width": "20.106ex",
+    "height": "7.676ex"
+  },
+  {
+    "name": "nested-matrix",
+    "urlLength": 335,
+    "status": 200,
+    "type": "image/svg+xml",
+    "rendered": true,
+    "expected": true,
+    "width": "17.526ex",
+    "height": "10.009ex"
+  },
+  {
+    "name": "nested-cases",
+    "urlLength": 342,
+    "status": 200,
+    "type": "image/svg+xml",
+    "rendered": true,
+    "expected": true,
+    "width": "21.44ex",
+    "height": "9.676ex"
+  },
+  {
+    "name": "nested-aligned",
+    "urlLength": 345,
+    "status": 200,
+    "type": "image/svg+xml",
+    "rendered": true,
+    "expected": true,
+    "width": "18.014ex",
+    "height": "9.676ex"
+  },
+  {
+    "name": "norm-and-fraction",
+    "urlLength": 426,
+    "status": 200,
+    "type": "image/svg+xml",
+    "rendered": true,
+    "expected": true,
+    "width": "13.999ex",
+    "height": "12.676ex"
+  },
+  {
+    "name": "text-symbols",
+    "urlLength": 504,
+    "status": 200,
+    "type": "image/svg+xml",
+    "rendered": true,
+    "expected": true,
+    "width": "38.529ex",
+    "height": "7.009ex"
+  },
+  {
+    "name": "styles-unicode",
+    "urlLength": 525,
+    "status": 200,
+    "type": "image/svg+xml",
+    "rendered": true,
+    "expected": true,
+    "width": "33.717ex",
+    "height": "11.009ex"
+  },
+  {
+    "name": "empty-crlf",
+    "urlLength": 314,
+    "status": 200,
+    "type": "image/svg+xml",
+    "rendered": true,
+    "expected": true,
+    "width": "10.596ex",
+    "height": "10.009ex"
+  },
+  {
+    "name": "header-only",
+    "urlLength": 144,
+    "status": 200,
+    "type": "image/svg+xml",
+    "rendered": true,
+    "expected": true,
+    "width": "5.094ex",
+    "height": "3.343ex"
+  },
+  {
+    "name": "long-text",
+    "urlLength": 767,
+    "status": 200,
+    "type": "image/svg+xml",
+    "rendered": true,
+    "expected": true,
+    "width": "41.95ex",
+    "height": "18.009ex"
+  },
+  {
+    "name": "large-split-1",
+    "urlLength": 7288,
+    "status": 200,
+    "type": "image/svg+xml",
+    "rendered": true,
+    "expected": true,
+    "width": "41.66ex",
+    "height": "192.009ex"
+  },
+  {
+    "name": "large-split-2",
+    "urlLength": 7308,
+    "status": 200,
+    "type": "image/svg+xml",
+    "rendered": true,
+    "expected": true,
+    "width": "41.66ex",
+    "height": "192.009ex"
+  },
+  {
+    "name": "large-split-3",
+    "urlLength": 3100,
+    "status": 200,
+    "type": "image/svg+xml",
+    "rendered": true,
+    "expected": true,
+    "width": "41.66ex",
+    "height": "80.676ex"
+  },
+  {
+    "name": "wide-eight-columns",
+    "urlLength": 573,
+    "status": 200,
+    "type": "image/svg+xml",
+    "rendered": true,
+    "expected": true,
+    "width": "44.906ex",
+    "height": "7.009ex"
+  },
+  {
+    "name": "comment-before",
+    "urlLength": 301,
+    "status": 200,
+    "type": "image/svg+xml",
+    "rendered": false,
+    "expected": false,
+    "width": "23.423ex",
+    "height": "3.843ex"
+  },
+  {
+    "name": "invalid-command",
+    "urlLength": 330,
+    "status": 200,
+    "type": "image/svg+xml",
+    "rendered": false,
+    "expected": false,
+    "width": "68.048ex",
+    "height": "3.843ex"
+  }
+]
