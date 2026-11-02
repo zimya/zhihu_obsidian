@@ -58,7 +58,7 @@ export async function svgToPngBuffer(
             }
 
             // 创建一个临时的Canvas
-            const canvas = document.createElement("canvas");
+            const canvas = createEl("canvas");
 
             // 关键步骤：根据缩放因子设置Canvas的像素尺寸
             canvas.width = originalWidth * scaleFactor;

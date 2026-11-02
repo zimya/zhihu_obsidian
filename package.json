@@ -44,6 +44,8 @@
         "unified": "^11.0.5"
     },
     "dependencies": {
+        "@codemirror/language": "^6.12.1",
+        "@lezer/highlight": "^1.2.3",
         "@r4ai/remark-callout": "^0.6.2",
         "file-type": "^22.2.0",
         "hast-util-to-string": "^3.0.1",

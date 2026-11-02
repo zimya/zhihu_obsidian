@@ -47,9 +47,9 @@ function AccountSetting(containerEl: HTMLElement, tab: ZhihuSettingTab) {
         });
 
         const text = container.createDiv({ cls: "zhihu-text-container" });
-        text.createEl("div", { text: userInfo.name, cls: "zhihu-username" });
+        text.createDiv({ text: userInfo.name, cls: "zhihu-username" });
         if (userInfo.headline) {
-            text.createEl("div", {
+            text.createDiv({
                 text: userInfo.headline,
                 cls: "zhihu-headline",
             });

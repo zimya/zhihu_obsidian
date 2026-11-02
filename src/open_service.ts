@@ -543,24 +543,24 @@ async function phaseQuestion(app: App, link: string): Promise<ParsedZhihu> {
     );
     // 附上问题回答（遍历 initialData answers）
     const answerData = jsonData.initialState?.entities?.answers ?? {};
-    const answerContainer = doc.createElement("div");
+    const answerContainer = doc.adoptNode(createDiv());
 
     for (const key in answerData) {
         const answer = answerData[key];
-        const header = doc.createElement("h1");
-        const link = doc.createElement("a");
+        const header = doc.adoptNode(createEl("h1"));
+        const link = doc.adoptNode(createEl("a"));
         link.href = `https://www.zhihu.com/question/${questionId}/answer/${answer.id}`;
         link.textContent = `${answer.author.name || "知乎用户"}的回答`;
         header.appendChild(link);
 
-        const content = doc.createElement("div");
+        const content = doc.adoptNode(createDiv());
         content.appendChild(sanitizeHTMLToDom(answer.content || ""));
 
         answerContainer.appendChild(header);
         answerContainer.appendChild(content);
     }
 
-    const container = doc.createElement("div");
+    const container = doc.adoptNode(createDiv());
     container.appendChild(sanitizeHTMLToDom(questionDetail));
     container.appendChild(answerContainer);
 

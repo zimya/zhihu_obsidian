@@ -85,7 +85,7 @@ export class ZhihuSideView extends View {
         recom_summary.addClass("side-summary");
         const recom_icon_container = recom_summary.createDiv();
         recom_icon_container.addClass("side-icons");
-        const recom_prev_icon = recom_icon_container.createEl("span");
+        const recom_prev_icon = recom_icon_container.createSpan();
         recom_prev_icon.addClass("side-icon");
         recom_prev_icon.setAttr("aria-label", locale.ui.previousPage);
         setIcon(recom_prev_icon, "arrow-left");
@@ -95,7 +95,7 @@ export class ZhihuSideView extends View {
                 this.refreshRecommendations(this.prevRecommendUrl),
             );
         });
-        const recom_refresh_icon = recom_icon_container.createEl("span");
+        const recom_refresh_icon = recom_icon_container.createSpan();
         recom_refresh_icon.addClass("side-icon");
         recom_refresh_icon.setAttr("aria-label", locale.ui.refreshRecommend);
         setIcon(recom_refresh_icon, "refresh-cw");
@@ -105,7 +105,7 @@ export class ZhihuSideView extends View {
                 this.refreshRecommendations(this.recommendUrl),
             );
         });
-        const recom_next_icon = recom_icon_container.createEl("span");
+        const recom_next_icon = recom_icon_container.createSpan();
         recom_next_icon.addClass("side-icon");
         recom_next_icon.setAttr("aria-label", locale.ui.nextPage);
         setIcon(recom_next_icon, "arrow-right");
@@ -116,7 +116,7 @@ export class ZhihuSideView extends View {
             );
         });
 
-        const recom_list_container = recom_details.createEl("div");
+        const recom_list_container = recom_details.createDiv();
         recom_list_container.addClass("side-list-container");
 
         const recom_list = recom_list_container.createEl("ul");
@@ -132,7 +132,7 @@ export class ZhihuSideView extends View {
 
         const follow_icon_container = follow_summary.createDiv();
         follow_icon_container.addClass("side-icons");
-        const follow_prev_icon = follow_icon_container.createEl("span");
+        const follow_prev_icon = follow_icon_container.createSpan();
         follow_prev_icon.addClass("side-icon");
         follow_prev_icon.setAttr("aria-label", locale.ui.previousPage);
         setIcon(follow_prev_icon, "arrow-left");
@@ -140,7 +140,7 @@ export class ZhihuSideView extends View {
             e.preventDefault();
             this.handleAction(() => this.refreshFollows(this.prevFollowUrl));
         });
-        const follow_refresh_icon = follow_icon_container.createEl("span");
+        const follow_refresh_icon = follow_icon_container.createSpan();
         follow_refresh_icon.addClass("side-icon");
         follow_refresh_icon.setAttr("aria-label", locale.ui.refreshFollows);
         setIcon(follow_refresh_icon, "refresh-cw");
@@ -148,7 +148,7 @@ export class ZhihuSideView extends View {
             e.preventDefault();
             this.handleAction(() => this.refreshFollows(this.followUrl));
         });
-        const follow_next_icon = follow_icon_container.createEl("span");
+        const follow_next_icon = follow_icon_container.createSpan();
         follow_next_icon.addClass("side-icon");
         follow_next_icon.setAttr("aria-label", locale.ui.nextPage);
         setIcon(follow_next_icon, "arrow-right");
@@ -157,7 +157,7 @@ export class ZhihuSideView extends View {
             this.handleAction(() => this.refreshFollows(this.nextFollowUrl));
         });
 
-        const follow_list_container = follow_details.createEl("div");
+        const follow_list_container = follow_details.createDiv();
         follow_list_container.addClass("side-list-container");
 
         const follow_list = follow_list_container.createEl("ul");
@@ -171,7 +171,7 @@ export class ZhihuSideView extends View {
         });
         hotlist_summary.addClass("side-summary");
 
-        const hotlist_refresh_icon = hotlist_summary.createEl("span");
+        const hotlist_refresh_icon = hotlist_summary.createSpan();
         hotlist_refresh_icon.addClass("side-icon");
         hotlist_refresh_icon.setAttr("aria-label", locale.ui.refreshHotlists);
         setIcon(hotlist_refresh_icon, "refresh-cw");
@@ -180,7 +180,7 @@ export class ZhihuSideView extends View {
             this.handleAction(() => this.refreshHotLists());
         });
 
-        const hotlist_container = hotlist_details.createEl("div");
+        const hotlist_container = hotlist_details.createDiv();
         hotlist_container.addClass("side-list-container");
 
         const hotlist = hotlist_container.createEl("ul");
