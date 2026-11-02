@@ -61,7 +61,7 @@ function textTokens(text: string): string[] {
 
 function textWidth(text: string): number {
     return Array.from(text).reduce(
-        (width, char) => width + (/[^\u0000-\u00ff]/.test(char) ? 2 : 1),
+        (width, char) => width + (char.codePointAt(0)! > 0xff ? 2 : 1),
         0,
     );
 }

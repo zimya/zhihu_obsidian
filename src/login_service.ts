@@ -553,7 +553,7 @@ async function extractZhihuCookiesViaWebviewer(
             previousZseCkValue,
         );
     } finally {
-        await leaf?.detach?.();
+        leaf.detach();
     }
 }
 
@@ -594,7 +594,7 @@ export async function zhihuClearLoginInfo(app: App): Promise<void> {
     try {
         await clearZhihuSessionData(webviewEl);
     } finally {
-        await leaf?.detach?.();
+        leaf.detach();
     }
 
     const vault = app.vault;
