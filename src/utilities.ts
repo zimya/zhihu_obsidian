@@ -1,5 +1,17 @@
-import { execFile } from "child_process";
 import { App, Notice, FuzzySuggestModal, TFolder } from "obsidian";
+
+export function imageFileName(source: string): string {
+    let pathname = source;
+    try {
+        const url = new URL(source);
+        if (url.protocol === "http:" || url.protocol === "https:") {
+            pathname = url.pathname;
+        }
+    } catch {
+        // Vault paths are not necessarily URLs.
+    }
+    return pathname.replace(/\/+$/, "").split("/").pop() ?? "";
+}
 
 type RequestOptions = {
     url: string;
@@ -47,19 +59,6 @@ export function fmtDate(date: Date): string {
     const minute = String(date.getMinutes()).padStart(2, "0");
 
     return `${year}-${month}-${day} ${hour}:${minute}`;
-}
-
-// 执行命令并等待
-export function execFileAsync(cmd: string, args: string[]) {
-    return new Promise<void>((resolve, reject) => {
-        execFile(cmd, args, (err) => {
-            if (err) {
-                reject(err instanceof Error ? err : new Error(String(err)));
-            } else {
-                resolve();
-            }
-        });
-    });
 }
 
 export function isWebUrl(url: string): boolean {

@@ -5,6 +5,7 @@ import {
     Notice,
     Vault,
     ToggleComponent,
+    Platform,
 } from "obsidian";
 import ZhihuObPlugin from "./main";
 import { ConfirmationModal, loadSettings, saveSettings } from "./settings";
@@ -527,6 +528,11 @@ function TypstPathSetting(
     typstCliPath: string,
 ): Setting {
     // Typst path setting
+    if (!Platform.isDesktop) {
+        return new Setting(containerEl)
+            .setName(locale.settings.typstVersion)
+            .setDesc(locale.settings.typstDesktopOnly);
+    }
     let versionName = getTypstVersion(typstCliPath);
     if (!versionName && typstMode) {
         new Notice(locale.notice.typstNotFound);

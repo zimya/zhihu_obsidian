@@ -1,9 +1,14 @@
-import { Vault, PluginSettingTab, Setting, FileSystemAdapter } from "obsidian";
+import {
+    Vault,
+    PluginSettingTab,
+    Setting,
+    FileSystemAdapter,
+    Platform,
+} from "obsidian";
 import { basicSetup, editorRoot } from "./cookies_editor/extensions";
 import { EditorState, Extension } from "@codemirror/state";
 import { EditorView, ViewUpdate } from "@codemirror/view";
 import { loadSettings, saveSettings } from "./settings";
-import { execFileSync } from "child_process";
 
 export async function createTypstEditor(
     st: PluginSettingTab,
@@ -37,8 +42,10 @@ export async function createTypstEditor(
 }
 
 export function getTypstVersion(path: string): string | null {
-    if (!path) return null;
+    if (!path || !Platform.isDesktop) return null;
     try {
+        const { execFileSync } =
+            require("child_process") as typeof import("child_process");
         const version = execFileSync(path, ["--version"]).toString();
         return version.replace("typst ", "");
     } catch (error) {
@@ -51,13 +58,25 @@ export async function typstCode2Img(
     code: string,
     vault: Vault,
 ): Promise<ArrayBuffer> {
+    if (!Platform.isDesktop) {
+        throw new Error(
+            "Typst CLI image rendering is only available on desktop",
+        );
+    }
+    const adapter = vault.adapter;
+    if (!(adapter instanceof FileSystemAdapter)) {
+        throw new Error(
+            "Typst CLI image rendering requires a filesystem vault",
+        );
+    }
+    const { execFileSync } =
+        require("child_process") as typeof import("child_process");
     const settings = await loadSettings(vault);
     const typstPath = settings.typstCliPath.trim();
     const typstImgPPI = settings.typstImgPPI.toString();
 
     // 临时文件通过 Obsidian 的 vault.adapter 读写，仅在插件配置目录内
-    const adapter = vault.adapter;
-    const basePath = (adapter as FileSystemAdapter).getBasePath();
+    const basePath = adapter.getBasePath();
     const tmpDir = `${vault.configDir}/plugins/zhihu/typst-tmp`;
     const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const typFile = `${tmpDir}/formula-${id}.typ`;

@@ -179,7 +179,7 @@ type ResolvedOpenOptions = {
 export async function clickInReadMode(app: App, evt: MouseEvent) {
     const target = evt.target as HTMLElement;
     if (
-        !(target instanceof HTMLAnchorElement) ||
+        !target?.instanceOf(HTMLAnchorElement) ||
         !target.classList.contains("external-link")
     ) {
         return;

@@ -1,4 +1,4 @@
-import { Vault, Notice, App, TFile, requestUrl } from "obsidian";
+import { Vault, Notice, App, TFile, requestUrl, Platform } from "obsidian";
 import { unified, Plugin, Transformer } from "unified";
 import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
@@ -26,7 +26,6 @@ import type { Parent, Node } from "unist";
 import { loadSettings, ZhihuSettings } from "./settings";
 import { getOnlineImg, getZhihuImg, getImgDimensions } from "./image_service";
 import * as file from "./files";
-import * as path from "path";
 import remarkCallout from "@r4ai/remark-callout";
 import { mathPlugin, zhihuEquation } from "./math";
 import {
@@ -41,7 +40,7 @@ import { typst2tex } from "tex2typst";
 import i18n, { type Lang } from "../locales";
 import rehypeRaw from "rehype-raw";
 import { typstCode2Img } from "./typst";
-import { isWebUrl, toArrayBuffer } from "./utilities";
+import { imageFileName, isWebUrl, toArrayBuffer } from "./utilities";
 import { fileTypeFromBuffer } from "file-type";
 import type { State } from "mdast-util-to-hast";
 
@@ -234,7 +233,7 @@ async function handleWikiImg(
     const imgName = node.value;
 
     if (alt === imgName) {
-        alt = settings.useImgNameDefault ? path.basename(imgName) : "";
+        alt = settings.useImgNameDefault ? imageFileName(imgName) : "";
     }
 
     const imgData = await file.getImgBufferFromName(app, imgName);
@@ -296,7 +295,11 @@ export const remarkTypst: Plugin<[App], Parent, Parent> = (app) => {
                     );
                 } catch (e) {
                     console.error("Typst display math conversion failed:", e);
-                    new Notice(`${locale.notice.typstConvertImgFailed}`);
+                    new Notice(
+                        Platform.isDesktop
+                            ? locale.notice.typstConvertImgFailed
+                            : locale.settings.typstDesktopOnly,
+                    );
                     return;
                 }
             };
@@ -339,7 +342,11 @@ export const remarkTypst: Plugin<[App], Parent, Parent> = (app) => {
                     );
                 } catch (error) {
                     console.error("Typst code conversion failed:", error);
-                    new Notice("Typst 转换图片失败，请检查语法是否正确");
+                    new Notice(
+                        Platform.isDesktop
+                            ? locale.notice.typstConvertImgFailed
+                            : locale.settings.typstDesktopOnly,
+                    );
                     return;
                 }
             })();

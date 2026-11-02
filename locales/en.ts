@@ -106,9 +106,12 @@ export default {
         openZhihuSideFailed:
             "Failed to open Zhihu sides: unable to create a sidebar leaf.",
         typstNotFound: "Typst not found",
-        mathTableKeptNative: "A math table contains links, images, or unsupported formatting and was kept as a native table. Its formulas may not display on Zhihu. Move that content outside the table to enable automatic array conversion.",
-        mathTableTooLarge: "A math table has a header or single row that is too large for an equation request. It was kept as a native table; its formulas may not display on Zhihu. Shorten the cells or split the table into fewer columns.",
-        mathTableRenderFailed: "Zhihu could not render a math table, or equation validation timed out/failed. The original table was kept; its formulas may not display. Check the formulas and connection, then retry.",
+        mathTableKeptNative:
+            "A math table contains links, images, or unsupported formatting and was kept as a native table. Its formulas may not display on Zhihu. Move that content outside the table to enable automatic array conversion.",
+        mathTableTooLarge:
+            "A math table has a header or single row that is too large for an equation request. It was kept as a native table; its formulas may not display on Zhihu. Shorten the cells or split the table into fewer columns.",
+        mathTableRenderFailed:
+            "Zhihu could not render a math table, or equation validation timed out/failed. The original table was kept; its formulas may not display. Check the formulas and connection, then retry.",
         typstPathEmpty: "Typst path is empty",
         typstVersion: "Typst Version",
         inlineTypstConvertFailed:
@@ -251,6 +254,8 @@ export default {
 ",
         typstVersion: "Typst Version:",
         typstPathDesc: "Please enter the path to the Typst executable file",
+        typstDesktopOnly:
+            "Typst CLI image rendering is only available on desktop.",
         typstPathToolTip: "Detect Typst path and display version",
         displayMathSetting: "Handling of display (block) formulas",
         displayMathSettingDesc:

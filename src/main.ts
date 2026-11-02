@@ -22,7 +22,7 @@ import { registerMenuCommands } from "./menu";
 import { ViewPlugin } from "@codemirror/view";
 import { zhihuDesktopPreview } from "./preview";
 import { scheduleUpdateStatusBar } from "./statusbar";
-import * as path from "path";
+import { imageFileName } from "./utilities";
 import { ensureZhihuFrontmatterTypes } from "./frontmatter";
 
 export default class ZhihuObPlugin extends Plugin {
@@ -301,7 +301,7 @@ export default class ZhihuObPlugin extends Plugin {
             if (altText === srcText) {
                 div.setAttribute(
                     "zhihu-img-caption",
-                    useImgName ? path.basename(srcText) : "",
+                    useImgName ? imageFileName(srcText) : "",
                 );
             } else {
                 div.setAttribute("zhihu-img-caption", altText);
