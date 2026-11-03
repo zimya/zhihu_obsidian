@@ -6,7 +6,7 @@
         "katex": "^0.19.0"
     },
     "name": "zhihu-obsidian",
-    "version": "0.4.3",
+    "version": "0.4.4",
     "description": "Enable you to publish your articles and answers to Zhihu",
     "main": "main.js",
     "scripts": {
