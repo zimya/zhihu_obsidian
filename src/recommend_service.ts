@@ -3,7 +3,7 @@ import * as dataUtil from "./data";
 import { Vault, Notice, requestUrl } from "obsidian";
 import { loadSettings } from "./settings";
 import i18n, { type Lang } from "../locales";
-const locale = i18n.current;
+const locale: Lang = i18n.current;
 export interface Recommendation {
     id: string;
     type: string;
@@ -48,20 +48,44 @@ export async function getRecommend(vault: Vault, url: string) {
             method: "GET",
         });
         return response.json;
-    } catch (error) {
+    } catch {
         new Notice(`${locale.notice.fetchRecommendFailed}`);
     }
 }
 
-export function loadRecommendations(response: any) {
+interface ZhihuRecommendTarget {
+    id: string;
+    type: string;
+    title: string;
+    excerpt: string;
+    excerpt_new: string;
+    author: { name: string };
+    question: { id: string; title: string };
+    content: unknown;
+    update: number;
+    created: number;
+    updated_time: number;
+    created_time: number;
+    visited_count: number;
+    voteup_count: number;
+    thanks_count: number;
+    favorite_count: number;
+}
+
+interface ZhihuRecommendItem {
+    type: string;
+    target: ZhihuRecommendTarget;
+}
+
+export function loadRecommendations(response: { data: ZhihuRecommendItem[] }) {
     try {
         const filteredData = response.data.filter(
-            (item: any) =>
+            (item) =>
                 item.type !== "feed_advert" &&
                 item.target &&
                 Object.keys(item.target).length > 0,
         );
-        return filteredData.map((item: any) => ({
+        return filteredData.map((item) => ({
             id: item.target.id,
             type: item.target.type,
             title:

@@ -1,5 +1,4 @@
 import { Vault, Notice, requestUrl } from "obsidian";
-import * as fs from "fs";
 import { fileTypeFromBuffer } from "file-type";
 import * as cookies from "./cookies";
 import * as dataUtil from "./data";
@@ -54,11 +53,17 @@ function buildOssSignatureString(
     return `${method}\n\n${contentType}\n${date}\n${canonicalizedOssHeaders}${canonicalizedResource}`;
 }
 
+interface UploadToken {
+    access_id: string;
+    access_key: string;
+    access_token: string;
+}
+
 // 更新函数签名
 async function uploadMultipart(
     vault: Vault,
     imgArrayBuffer: ArrayBuffer,
-    uploadToken: any,
+    uploadToken: UploadToken,
     imgHash: string,
     imageId: string,
 ) {
@@ -300,7 +305,7 @@ async function uploadImg(
     vault: Vault,
     imgId: string,
     imgArrayBuffer: ArrayBuffer,
-    uploadToken: any,
+    uploadToken: UploadToken,
 ) {
     try {
         const settings = await loadSettings(vault);
@@ -440,7 +445,7 @@ async function pollImgStatus(
             break;
         }
 
-        await new Promise((r) => setTimeout(r, intervalMs));
+        await new Promise((r) => window.setTimeout(r, intervalMs));
     }
 
     return getDefaultImgStatus(imgHash);
@@ -451,7 +456,7 @@ export async function getZhihuImg(
     imgArrayBuffer: ArrayBuffer,
 ): Promise<ImgStatus> {
     const data = await dataUtil.loadData(vault);
-    const cache: Record<string, ImgStatus> = data.cache ?? {};
+    const cache = (data.cache ?? {}) as Record<string, ImgStatus>;
     const hash = md5Hex(imgArrayBuffer);
 
     if (!cache[hash]) {

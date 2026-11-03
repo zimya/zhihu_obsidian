@@ -14,9 +14,9 @@ const locale: Lang = i18n.current;
 
 export class ZhihuQuestionLinkModal extends Modal {
     inputEl: TextComponent;
-    onSubmit: (input: string) => void;
+    onSubmit: (input: string) => void | Promise<void>;
 
-    constructor(app: App, onSubmit: (input: string) => void) {
+    constructor(app: App, onSubmit: (input: string) => void | Promise<void>) {
         super(app);
         this.onSubmit = onSubmit;
     }
@@ -42,7 +42,15 @@ export class ZhihuQuestionLinkModal extends Modal {
                         return;
                     }
                     this.close();
-                    this.onSubmit(value);
+                    void Promise.resolve()
+                        .then(() => this.onSubmit(value))
+                        .catch((error: unknown) => {
+                            new Notice(
+                                error instanceof Error
+                                    ? error.message
+                                    : locale.error.unknownError,
+                            );
+                        });
                 }
             },
         );
@@ -162,7 +170,7 @@ async function patchDraft(
     vault: Vault,
     questionId: string,
     answerId: string,
-    patchBody: any,
+    patchBody: unknown,
 ) {
     try {
         const data = await dataUtil.loadData(vault);
@@ -175,7 +183,7 @@ async function patchDraft(
             "captcha_session_v2",
             "z_c0",
         ]);
-        const xsrftoken = data.cookies._xsrf;
+        const xsrftoken = data.cookies?._xsrf ?? "";
         const url = `https://www.zhihu.com/api/v4/questions/${questionId}/draft`;
         await requestUrl({
             url: url,
@@ -231,7 +239,7 @@ async function publishAnswerDraft(
             "z_c0",
             "q_c1",
         ]);
-        const xsrftoken = data.cookies._xsrf;
+        const xsrftoken = data.cookies?._xsrf ?? "";
         const traceId = `${Date.now()},${uuidv4()}`;
         const response = await requestUrl({
             url: `https://www.zhihu.com/api/v4/content/publish`,

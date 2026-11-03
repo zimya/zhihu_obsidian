@@ -6,6 +6,7 @@ import {
     type PluginManifest,
     Notice,
     Platform,
+    requireApiVersion,
 } from "obsidian";
 
 import { MentionSuggest } from "./member_mention";
@@ -14,15 +15,16 @@ import * as publish from "./publish_service";
 import * as side from "./sides_view";
 import * as answer from "./answer_service";
 import { ZhihuSettingTab } from "./settings_tab";
+import { LegacyZhihuSettingTab } from "./legacy_settings_tab";
 import { loadIcons } from "./icon";
 import { loadSettings } from "./settings";
 import * as open from "./open_service";
 import i18n, { type Lang } from "../locales";
 import { registerMenuCommands } from "./menu";
-import { ViewPlugin, ViewUpdate, EditorView } from "@codemirror/view";
+import { ViewPlugin } from "@codemirror/view";
 import { zhihuDesktopPreview } from "./preview";
 import { scheduleUpdateStatusBar } from "./statusbar";
-import * as path from "path";
+import { imageFileName } from "./utilities";
 import { ensureZhihuFrontmatterTypes } from "./frontmatter";
 
 export default class ZhihuObPlugin extends Plugin {
@@ -81,8 +83,24 @@ export default class ZhihuObPlugin extends Plugin {
                 document,
                 "click",
                 (e) => {
-                    open.clickInReadMode(this.app, e); // 在阅读模式下自动打开链接
-                    open.clickInPreview(this, e); // 在Live Preview模式下自动打开链接
+                    void open
+                        .clickInReadMode(this.app, e)
+                        .catch((error: unknown) => {
+                            new Notice(
+                                error instanceof Error
+                                    ? error.message
+                                    : this.i18n.error.unknownError,
+                            );
+                        }); // 在阅读模式下自动打开链接
+                    void open
+                        .clickInPreview(this, e)
+                        .catch((error: unknown) => {
+                            new Notice(
+                                error instanceof Error
+                                    ? error.message
+                                    : this.i18n.error.unknownError,
+                            );
+                        }); // 在Live Preview模式下自动打开链接
                 },
                 true,
             );
@@ -96,7 +114,7 @@ export default class ZhihuObPlugin extends Plugin {
         loadIcons();
         this.addRibbonIcon("zhihu-icon", "Open Zhihu side view", async () => {
             if (await login.checkIsUserLogin(this.app.vault)) {
-                side.activateSideView(this.app);
+                await side.activateSideView(this.app);
             } else {
                 new Notice(loginNoticeStr);
             }
@@ -110,7 +128,7 @@ export default class ZhihuObPlugin extends Plugin {
             name: "Open side view",
             callback: async () => {
                 if (await login.checkIsUserLogin(this.app.vault)) {
-                    side.activateSideView(this.app);
+                    await side.activateSideView(this.app);
                 } else {
                     new Notice(loginNoticeStr);
                 }
@@ -268,7 +286,11 @@ export default class ZhihuObPlugin extends Plugin {
         });
 
         // Register the settings tab
-        this.addSettingTab(new ZhihuSettingTab(this.app, this));
+        this.addSettingTab(
+            requireApiVersion("1.13.0")
+                ? new ZhihuSettingTab(this.app, this)
+                : new LegacyZhihuSettingTab(this.app, this),
+        );
     }
 
     // 修补DOM，增加zhihu-img-caption，来显示自定义caption
@@ -285,7 +307,7 @@ export default class ZhihuObPlugin extends Plugin {
             if (altText === srcText) {
                 div.setAttribute(
                     "zhihu-img-caption",
-                    useImgName ? path.basename(srcText) : "",
+                    useImgName ? imageFileName(srcText) : "",
                 );
             } else {
                 div.setAttribute("zhihu-img-caption", altText);

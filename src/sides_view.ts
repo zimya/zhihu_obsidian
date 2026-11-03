@@ -9,7 +9,7 @@ import { HotList, loadHotList } from "./hot_lists_service";
 import { touchToRead } from "./read_service";
 import { loadSettings } from "./settings";
 import i18n, { type Lang } from "../locales";
-const locale = i18n.current;
+const locale: Lang = i18n.current;
 export const SIDES_VIEW_TYPE = "zhihu-sides-view";
 import { ZhihuOpener, asZhihuType, ZhihuOpenRequest } from "./open_service";
 
@@ -17,7 +17,7 @@ export async function activateSideView(app: App) {
     const { workspace } = app;
     const existingLeaf = workspace.getLeavesOfType(SIDES_VIEW_TYPE)[0];
     if (existingLeaf) {
-        workspace.revealLeaf(existingLeaf);
+        await workspace.revealLeaf(existingLeaf);
         return;
     }
     let leaf: WorkspaceLeaf | null = workspace.getLeftLeaf(false);
@@ -31,7 +31,7 @@ export async function activateSideView(app: App) {
             type: SIDES_VIEW_TYPE,
             active: true,
         });
-        workspace.revealLeaf(leaf);
+        await workspace.revealLeaf(leaf);
     } else {
         new Notice(`${locale.notice.openZhihuSideFailed}`);
         console.error(locale.error.noLeafAvailable);
@@ -68,7 +68,7 @@ export class ZhihuSideView extends View {
     }
 
     async onOpen() {
-        this.render();
+        await this.render();
     }
 
     async render() {
@@ -85,32 +85,38 @@ export class ZhihuSideView extends View {
         recom_summary.addClass("side-summary");
         const recom_icon_container = recom_summary.createDiv();
         recom_icon_container.addClass("side-icons");
-        const recom_prev_icon = recom_icon_container.createEl("span");
+        const recom_prev_icon = recom_icon_container.createSpan();
         recom_prev_icon.addClass("side-icon");
         recom_prev_icon.setAttr("aria-label", locale.ui.previousPage);
         setIcon(recom_prev_icon, "arrow-left");
         recom_prev_icon.onClickEvent((e) => {
             e.preventDefault();
-            this.refreshRecommendations(this.prevRecommendUrl);
+            this.handleAction(() =>
+                this.refreshRecommendations(this.prevRecommendUrl),
+            );
         });
-        const recom_refresh_icon = recom_icon_container.createEl("span");
+        const recom_refresh_icon = recom_icon_container.createSpan();
         recom_refresh_icon.addClass("side-icon");
         recom_refresh_icon.setAttr("aria-label", locale.ui.refreshRecommend);
         setIcon(recom_refresh_icon, "refresh-cw");
         recom_refresh_icon.onClickEvent((e) => {
             e.preventDefault();
-            this.refreshRecommendations(this.recommendUrl);
+            this.handleAction(() =>
+                this.refreshRecommendations(this.recommendUrl),
+            );
         });
-        const recom_next_icon = recom_icon_container.createEl("span");
+        const recom_next_icon = recom_icon_container.createSpan();
         recom_next_icon.addClass("side-icon");
         recom_next_icon.setAttr("aria-label", locale.ui.nextPage);
         setIcon(recom_next_icon, "arrow-right");
         recom_next_icon.onClickEvent((e) => {
             e.preventDefault();
-            this.refreshRecommendations(this.nextRecommendUrl);
+            this.handleAction(() =>
+                this.refreshRecommendations(this.nextRecommendUrl),
+            );
         });
 
-        const recom_list_container = recom_details.createEl("div");
+        const recom_list_container = recom_details.createDiv();
         recom_list_container.addClass("side-list-container");
 
         const recom_list = recom_list_container.createEl("ul");
@@ -126,32 +132,32 @@ export class ZhihuSideView extends View {
 
         const follow_icon_container = follow_summary.createDiv();
         follow_icon_container.addClass("side-icons");
-        const follow_prev_icon = follow_icon_container.createEl("span");
+        const follow_prev_icon = follow_icon_container.createSpan();
         follow_prev_icon.addClass("side-icon");
         follow_prev_icon.setAttr("aria-label", locale.ui.previousPage);
         setIcon(follow_prev_icon, "arrow-left");
         follow_prev_icon.onClickEvent((e) => {
             e.preventDefault();
-            this.refreshFollows(this.prevFollowUrl);
+            this.handleAction(() => this.refreshFollows(this.prevFollowUrl));
         });
-        const follow_refresh_icon = follow_icon_container.createEl("span");
+        const follow_refresh_icon = follow_icon_container.createSpan();
         follow_refresh_icon.addClass("side-icon");
         follow_refresh_icon.setAttr("aria-label", locale.ui.refreshFollows);
         setIcon(follow_refresh_icon, "refresh-cw");
         follow_refresh_icon.onClickEvent((e) => {
             e.preventDefault();
-            this.refreshFollows(this.followUrl);
+            this.handleAction(() => this.refreshFollows(this.followUrl));
         });
-        const follow_next_icon = follow_icon_container.createEl("span");
+        const follow_next_icon = follow_icon_container.createSpan();
         follow_next_icon.addClass("side-icon");
         follow_next_icon.setAttr("aria-label", locale.ui.nextPage);
         setIcon(follow_next_icon, "arrow-right");
         follow_next_icon.onClickEvent((e) => {
             e.preventDefault();
-            this.refreshFollows(this.nextFollowUrl);
+            this.handleAction(() => this.refreshFollows(this.nextFollowUrl));
         });
 
-        const follow_list_container = follow_details.createEl("div");
+        const follow_list_container = follow_details.createDiv();
         follow_list_container.addClass("side-list-container");
 
         const follow_list = follow_list_container.createEl("ul");
@@ -165,16 +171,16 @@ export class ZhihuSideView extends View {
         });
         hotlist_summary.addClass("side-summary");
 
-        const hotlist_refresh_icon = hotlist_summary.createEl("span");
+        const hotlist_refresh_icon = hotlist_summary.createSpan();
         hotlist_refresh_icon.addClass("side-icon");
         hotlist_refresh_icon.setAttr("aria-label", locale.ui.refreshHotlists);
         setIcon(hotlist_refresh_icon, "refresh-cw");
         hotlist_refresh_icon.onClickEvent((e) => {
             e.preventDefault();
-            this.refreshHotLists();
+            this.handleAction(() => this.refreshHotLists());
         });
 
-        const hotlist_container = hotlist_details.createEl("div");
+        const hotlist_container = hotlist_details.createDiv();
         hotlist_container.addClass("side-list-container");
 
         const hotlist = hotlist_container.createEl("ul");
@@ -215,25 +221,27 @@ export class ZhihuSideView extends View {
             });
             excerpt.appendText(": " + recommendation.excerpt);
 
-            item.onClickEvent(async () => {
-                if (settings.sendReadToZhihu !== false) {
-                    await touchToRead(
-                        this.vault,
-                        recommendation.type,
-                        recommendation.id,
-                    );
-                }
-                const opener = new ZhihuOpener(this.app);
-                const zhType = asZhihuType(recommendation.type);
-                if (!zhType) return;
-                const req: ZhihuOpenRequest = {
-                    url: recommendation.url,
-                    type: zhType,
-                    destFolder: settings.defaultSaveFolder,
-                    offlineImages: settings.turnImgOffline,
-                    overwrite: true,
-                };
-                await opener.open(req);
+            item.onClickEvent(() => {
+                this.handleAction(async () => {
+                    if (settings.sendReadToZhihu !== false) {
+                        await touchToRead(
+                            this.vault,
+                            recommendation.type,
+                            recommendation.id,
+                        );
+                    }
+                    const opener = new ZhihuOpener(this.app);
+                    const zhType = asZhihuType(recommendation.type);
+                    if (!zhType) return;
+                    const req: ZhihuOpenRequest = {
+                        url: recommendation.url,
+                        type: zhType,
+                        destFolder: settings.defaultSaveFolder,
+                        offlineImages: settings.turnImgOffline,
+                        overwrite: true,
+                    };
+                    await opener.open(req);
+                });
             });
         });
     }
@@ -269,22 +277,34 @@ export class ZhihuSideView extends View {
             });
             excerpt.appendText(": " + follow.excerpt);
 
-            item.onClickEvent(async () => {
-                if (settings.sendReadToZhihu !== false) {
-                    await touchToRead(this.vault, follow.type, follow.id);
-                }
-                const opener = new ZhihuOpener(this.app);
-                const zhType = asZhihuType(follow.type);
-                if (!zhType) return;
-                const req: ZhihuOpenRequest = {
-                    url: follow.url,
-                    type: zhType,
-                    destFolder: settings.defaultSaveFolder,
-                    offlineImages: settings.turnImgOffline,
-                    overwrite: true,
-                };
-                await opener.open(req);
+            item.onClickEvent(() => {
+                this.handleAction(async () => {
+                    if (settings.sendReadToZhihu !== false) {
+                        await touchToRead(this.vault, follow.type, follow.id);
+                    }
+                    const opener = new ZhihuOpener(this.app);
+                    const zhType = asZhihuType(follow.type);
+                    if (!zhType) return;
+                    const req: ZhihuOpenRequest = {
+                        url: follow.url,
+                        type: zhType,
+                        destFolder: settings.defaultSaveFolder,
+                        offlineImages: settings.turnImgOffline,
+                        overwrite: true,
+                    };
+                    await opener.open(req);
+                });
             });
+        });
+    }
+
+    private handleAction(action: () => Promise<void>): void {
+        void action().catch((error: unknown) => {
+            new Notice(
+                error instanceof Error
+                    ? error.message
+                    : locale.error.unknownError,
+            );
         });
     }
 
@@ -297,7 +317,7 @@ export class ZhihuSideView extends View {
         const settings = await loadSettings(this.vault);
         list.empty();
         this.hotLists = await loadHotList(this.vault);
-        this.hotLists.forEach(async (hot) => {
+        this.hotLists.forEach((hot) => {
             const item = list.createEl("li");
             item.addClass("side-item");
             item.setAttr("aria-label", `${hot.title}\n${hot.detail_text}`);
@@ -311,18 +331,20 @@ export class ZhihuSideView extends View {
                 text: `🔥${hot.detail_text}🔥`,
             });
             excerpt.appendText(": " + hot.excerpt);
-            item.onClickEvent(async () => {
-                const opener = new ZhihuOpener(this.app);
-                const zhType = asZhihuType(hot.type);
-                if (!zhType) return;
-                const req: ZhihuOpenRequest = {
-                    url: hot.link,
-                    type: zhType,
-                    destFolder: settings.defaultSaveFolder,
-                    offlineImages: settings.turnImgOffline,
-                    overwrite: true,
-                };
-                await opener.open(req);
+            item.onClickEvent(() => {
+                this.handleAction(async () => {
+                    const opener = new ZhihuOpener(this.app);
+                    const zhType = asZhihuType(hot.type);
+                    if (!zhType) return;
+                    const req: ZhihuOpenRequest = {
+                        url: hot.link,
+                        type: zhType,
+                        destFolder: settings.defaultSaveFolder,
+                        offlineImages: settings.turnImgOffline,
+                        overwrite: true,
+                    };
+                    await opener.open(req);
+                });
             });
         });
     }

@@ -1,14 +1,14 @@
-import { Vault, PluginSettingTab, Setting } from "obsidian";
+import {
+    Vault,
+    PluginSettingTab,
+    Setting,
+    FileSystemAdapter,
+    Platform,
+} from "obsidian";
 import { basicSetup, editorRoot } from "./cookies_editor/extensions";
 import { EditorState, Extension } from "@codemirror/state";
 import { EditorView, ViewUpdate } from "@codemirror/view";
 import { loadSettings, saveSettings } from "./settings";
-import { execFileSync } from "child_process";
-import * as os from "os";
-import * as fs from "fs";
-import * as path from "path";
-import { getZhihuImg } from "./image_service";
-import { writeFile, mkdtemp, rm } from "fs/promises";
 
 export async function createTypstEditor(
     st: PluginSettingTab,
@@ -18,10 +18,12 @@ export async function createTypstEditor(
     const customCSSWrapper = setting.controlEl.createDiv(
         "typst-editor-wrapper",
     );
-    const change = EditorView.updateListener.of(async (v: ViewUpdate) => {
+    const change = EditorView.updateListener.of((v: ViewUpdate) => {
         if (v.docChanged) {
-            await saveSettings(st.app.vault, {
+            void saveSettings(st.app.vault, {
                 typstPresetStyle: v.state.doc.toString(),
+            }).catch((error: unknown) => {
+                console.error("Failed to save Typst preset style", error);
             });
         }
     });
@@ -40,8 +42,10 @@ export async function createTypstEditor(
 }
 
 export function getTypstVersion(path: string): string | null {
-    if (!path) return null;
+    if (!path || !Platform.isDesktop) return null;
     try {
+        const { execFileSync } =
+            require("child_process") as typeof import("child_process");
         const version = execFileSync(path, ["--version"]).toString();
         return version.replace("typst ", "");
     } catch (error) {
@@ -53,30 +57,51 @@ export function getTypstVersion(path: string): string | null {
 export async function typstCode2Img(
     code: string,
     vault: Vault,
-): Promise<string> {
+): Promise<ArrayBuffer> {
+    if (!Platform.isDesktop) {
+        throw new Error(
+            "Typst CLI image rendering is only available on desktop",
+        );
+    }
+    const adapter = vault.adapter;
+    if (!(adapter instanceof FileSystemAdapter)) {
+        throw new Error(
+            "Typst CLI image rendering requires a filesystem vault",
+        );
+    }
+    const { execFileSync } =
+        require("child_process") as typeof import("child_process");
     const settings = await loadSettings(vault);
     const typstPath = settings.typstCliPath.trim();
     const typstImgPPI = settings.typstImgPPI.toString();
 
-    const tmpDir = await mkdtemp(path.join(os.tmpdir(), "typst-"));
-    const pngFile = path.join(tmpDir, "formula.png");
-    const typFile = path.join(tmpDir, "formula.typ");
-    await writeFile(typFile, code, "utf8");
-    // 使用命令行转换成png图片
-    execFileSync(typstPath, [
-        "compile",
-        "--ppi",
-        typstImgPPI,
-        typFile,
-        pngFile,
-    ]);
-    const imgData = fs.readFileSync(pngFile);
-    const imgArrayBuffer = imgData.buffer.slice(
-        imgData.byteOffset,
-        imgData.byteOffset + imgData.byteLength,
-    ) as ArrayBuffer;
-    const imgRes = await getZhihuImg(vault, imgArrayBuffer);
-    const imgLink = imgRes.original_src;
-    await rm(tmpDir, { recursive: true, force: true }); // 清理临时文件夹
-    return imgLink;
+    // 临时文件通过 Obsidian 的 vault.adapter 读写，仅在插件配置目录内
+    const basePath = adapter.getBasePath();
+    const tmpDir = `${vault.configDir}/plugins/zhihu/typst-tmp`;
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const typFile = `${tmpDir}/formula-${id}.typ`;
+    const pngFile = `${tmpDir}/formula-${id}.png`;
+    if (!(await adapter.exists(tmpDir))) {
+        await adapter.mkdir(tmpDir);
+    }
+    try {
+        await adapter.write(typFile, code);
+        // 使用命令行转换成png图片
+        execFileSync(typstPath, [
+            "compile",
+            "--ppi",
+            typstImgPPI,
+            `${basePath}/${typFile}`,
+            `${basePath}/${pngFile}`,
+        ]);
+        // 必须 await，否则 finally 会在读取完成前删除文件
+        return await adapter.readBinary(pngFile);
+    } finally {
+        // 清理临时文件
+        for (const file of [typFile, pngFile]) {
+            if (await adapter.exists(file)) {
+                await adapter.remove(file);
+            }
+        }
+    }
 }

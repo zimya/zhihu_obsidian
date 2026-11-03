@@ -1,36 +1,48 @@
-import { Vault, Notice, App, TFile, requestUrl } from "obsidian";
+import { Vault, Notice, App, TFile, requestUrl, Platform } from "obsidian";
 import { unified, Plugin, Transformer } from "unified";
 import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 import remarkRehype from "remark-rehype";
 import rehypeStringify from "rehype-stringify";
-import rehypeFormat from "rehype-format";
 import { wikiLink, wikiImgLink } from "micromark-extension-wiki-link";
 import * as muwl from "mdast-util-wiki-link";
 import { visit } from "unist-util-visit";
 import { u } from "unist-builder";
 import type { Element } from "hast";
-import type { Link, Image, Text, Code, Root, Table } from "mdast";
+import type {
+    Link,
+    Image,
+    Text,
+    Code,
+    Root,
+    Table,
+    FootnoteReference,
+    Heading,
+    Blockquote,
+    Paragraph,
+} from "mdast";
 import type { Options as RemarkRehypeOptions } from "remark-rehype";
 import type { Parent, Node } from "unist";
 import { loadSettings, ZhihuSettings } from "./settings";
 import { getOnlineImg, getZhihuImg, getImgDimensions } from "./image_service";
 import * as file from "./files";
-import * as fs from "fs";
-import * as path from "path";
 import remarkCallout from "@r4ai/remark-callout";
-import remarkBreaks from "remark-breaks";
 import { mathPlugin, zhihuEquation } from "./math";
-import { prepareMathTables, renderZhihuTable, type MathTableResult, type MathTableFallback } from "./math_table";
+import {
+    prepareMathTables,
+    renderZhihuTable,
+    type MathTableResult,
+    type MathTableFallback,
+} from "./math_table";
 import { validateEquation } from "./math_table_validation";
 import * as mermaid from "./mermaid";
 import { typst2tex } from "tex2typst";
 import i18n, { type Lang } from "../locales";
 import rehypeRaw from "rehype-raw";
 import { typstCode2Img } from "./typst";
-import { isWebUrl, toArrayBuffer } from "./utilities";
+import { imageFileName, isWebUrl, toArrayBuffer } from "./utilities";
 import { fileTypeFromBuffer } from "file-type";
-import { State } from "mdast-util-to-markdown";
+import type { State } from "mdast-util-to-hast";
 
 const locale: Lang = i18n.current;
 
@@ -69,11 +81,30 @@ interface WikiLinkNode extends Node {
     };
 }
 
-function wikiLinkPlugin(this: any, opts = {}) {
-    const data = this.data();
+interface RenderNode extends Node {
+    value?: string;
+    lang?: string | null;
+    identifier?: string;
+    depth?: number;
+    url?: string;
+    title?: string;
+    tagName?: string;
+    children?: RenderNode[];
+    data?: {
+        hName?: string;
+        hProperties?: Record<string, unknown>;
+        alias?: string;
+        permalink?: string;
+        exists?: boolean;
+    };
+}
 
-    function add(field: any, value: any) {
-        if (data[field]) data[field].push(value);
+function wikiLinkPlugin(this: import("unified").Processor, opts: object = {}) {
+    const data = this.data() as unknown as Record<string, unknown>;
+
+    function add(field: string, value: unknown) {
+        const extensions = data[field];
+        if (Array.isArray(extensions)) extensions.push(value);
         else data[field] = [value];
     }
 
@@ -93,7 +124,9 @@ export const remarkZhihuImgs: Plugin<[App], Parent, Parent> = (app) => {
         const settings = await loadSettings(vault);
         const tasks: Promise<void>[] = [];
 
-        visit(tree, "image", (node) => {
+        visit(tree, "image", (node: Image) => {
+            // remarkTypst 生成的图片已上传到知乎图床，无需再次下载
+            if (node.data?.hName) return;
             tasks.push(handleMdImage(app, vault, settings, node));
         });
 
@@ -200,7 +233,7 @@ async function handleWikiImg(
     const imgName = node.value;
 
     if (alt === imgName) {
-        alt = settings.useImgNameDefault ? path.basename(imgName) : "";
+        alt = settings.useImgNameDefault ? imageFileName(imgName) : "";
     }
 
     const imgData = await file.getImgBufferFromName(app, imgName);
@@ -234,39 +267,48 @@ export const remarkTypst: Plugin<[App], Parent, Parent> = (app) => {
         if (settings.typstMode === false) {
             return;
         }
-        visit(tree, "inlineMath", (node: any) => {
-            const typst = node.value;
+        visit(tree, "inlineMath", (node) => {
+            const mathNode = node as RenderNode;
+            const typst = mathNode.value ?? "";
             try {
                 const tex = typst2tex(typst);
-                node.value = tex;
-            } catch (e) {
+                mathNode.value = tex;
+            } catch {
                 console.error(`Typst inline math ${typst} conversion failed`);
                 new Notice(`${locale.notice.inlineTypstConvertFailed}`);
             }
         });
-        visit(tree, "math", (node: any) => {
-            const typstEq = node.value;
+        visit(tree, "math", (node) => {
+            const mathNode = node as RenderNode;
+            const typstEq = mathNode.value ?? "";
             const toPicTask = async () => {
-                let imgLink = "";
                 try {
                     const presetStyle = settings.typstPresetStyle;
                     const typstContent = `${presetStyle}\n$ ${typstEq} $`;
-                    imgLink = await typstCode2Img(typstContent, vault);
+                    const imgArrayBuffer = await typstCode2Img(
+                        typstContent,
+                        vault,
+                    );
+                    Object.assign(
+                        mathNode,
+                        await bufferToZhihuImageNode(vault, imgArrayBuffer, ""),
+                    );
                 } catch (e) {
                     console.error("Typst display math conversion failed:", e);
-                    new Notice(`${locale.notice.typstConvertImgFailed}`);
+                    new Notice(
+                        Platform.isDesktop
+                            ? locale.notice.typstConvertImgFailed
+                            : locale.settings.typstDesktopOnly,
+                    );
                     return;
                 }
-                node.type = "image"; // 转换成 img 节点
-                node.url = imgLink;
-                node.alt = "";
             };
 
             const toTeXTask = async () => {
                 try {
                     const tex = typst2tex(typstEq);
-                    node.value = tex;
-                } catch (e) {
+                    mathNode.value = tex;
+                } catch {
                     console.error(
                         `Typst display math ${typstEq} conversion failed`,
                     );
@@ -279,26 +321,34 @@ export const remarkTypst: Plugin<[App], Parent, Parent> = (app) => {
                 ? tasks.push(toTeXTask()) // 转换成TeX
                 : tasks.push(toPicTask()); // 转换成图片
         });
-        visit(tree, "code", (node: any) => {
-            const typstCode = node.value;
-            const lang = node.lang;
+        visit(tree, "code", (node) => {
+            const codeNode = node as RenderNode;
+            const typstCode = codeNode.value ?? "";
+            const lang = codeNode.lang;
             if (lang !== "typrender") {
                 return;
             }
             const task = (async () => {
-                let imgLink = "";
                 try {
                     const presetStyle = settings.typstPresetStyle;
                     const typstContent = `${presetStyle}\n${typstCode}`;
-                    imgLink = await typstCode2Img(typstContent, vault);
+                    const imgArrayBuffer = await typstCode2Img(
+                        typstContent,
+                        vault,
+                    );
+                    Object.assign(
+                        codeNode,
+                        await bufferToZhihuImageNode(vault, imgArrayBuffer, ""),
+                    );
                 } catch (error) {
                     console.error("Typst code conversion failed:", error);
-                    new Notice("Typst 转换图片失败，请检查语法是否正确");
+                    new Notice(
+                        Platform.isDesktop
+                            ? locale.notice.typstConvertImgFailed
+                            : locale.settings.typstDesktopOnly,
+                    );
                     return;
                 }
-                node.type = "image"; // 转换成 img 节点
-                node.url = imgLink;
-                node.alt = "";
             })();
             tasks.push(task);
         });
@@ -313,7 +363,7 @@ export async function remarkMdToHTML(app: App, md: string) {
     let preparedTables = new Map<Table, MathTableResult>();
     const settings = await loadSettings(app.vault);
     const zhihuHandlers = {
-        link(state: any, node: Link): Element {
+        link(state: State, node: Link): Element {
             const properties: { [key: string]: string } = {};
             if (node.title === "card") {
                 // EXAMPLE:
@@ -350,11 +400,11 @@ export async function remarkMdToHTML(app: App, md: string) {
                 children: state.all(node),
             };
         },
-        inlineMath(state: any, node: any): Element {
-            return zhihuEquation(node.value, false);
+        inlineMath(state: State, node: RenderNode): Element {
+            return zhihuEquation(node.value ?? "", false);
         },
-        math(state: any, node: any): Element {
-            return zhihuEquation(node.value, true);
+        math(state: State, node: RenderNode): Element {
+            return zhihuEquation(node.value ?? "", true);
         },
         // EXAMPLE:
         // ```python
@@ -363,7 +413,7 @@ export async function remarkMdToHTML(app: App, md: string) {
         // <pre lang="python">
         // print("hello")
         // </pre>
-        code(state: any, node: any): Element {
+        code(state: State, node: RenderNode): Element {
             const lang = node.lang || "";
             const code = node.value ? node.value.trim() : "";
             return {
@@ -373,16 +423,21 @@ export async function remarkMdToHTML(app: App, md: string) {
                 children: [u("text", code)],
             };
         },
-        table(state: any, node: Table): Element | Element[] {
-            return renderZhihuTable(state, node, (reason) => {
-                mathTableFallbacks.add(reason);
-            }, preparedTables.get(node));
+        table(state: State, node: Table): Element | Element[] {
+            return renderZhihuTable(
+                state,
+                node,
+                (reason) => {
+                    mathTableFallbacks.add(reason);
+                },
+                preparedTables.get(node),
+            );
         },
         // EXAMPLE:
         // <sup data-text="注释文本" data-url="https://www.github.com"
         // data-draft-node="inline" data-draft-type="reference"
         // data-numero="1">[1]</sup>
-        footnoteReference(state: any, node: any): Element {
+        footnoteReference(state: State, node: FootnoteReference): Element {
             const rawId = String(node.identifier).toUpperCase(); // 标准化 id（内部存的是大写）
             // 分配新编号
             let numero = idMap.get(rawId);
@@ -403,10 +458,12 @@ export async function remarkMdToHTML(app: App, md: string) {
             }
 
             // 解析 def.children[0]（第一个段落）里的文本和链接
-            const para = def.children[0];
+            const para = def.children.find(
+                (child) => child.type === "paragraph",
+            );
             let text = "";
             let url = "";
-            for (const child of para.children) {
+            for (const child of para?.children ?? []) {
                 if (child.type === "text") text += child.value.trim();
                 if (child.type === "link") url = child.url;
             }
@@ -431,7 +488,7 @@ export async function remarkMdToHTML(app: App, md: string) {
         // 如果是一个#，则是二级标题<h2>
         // 如果是两个#，则是三级标题<h3>
         // 如果是三个及以上的#，则是加粗处理
-        heading(state: any, node: any): Element {
+        heading(state: State, node: Heading): Element {
             const children = state.all(node) as Element[];
             // 如果不使用知乎特色的标题，那么直接几级就转换成几级的HTML
             if (!settings.useZhihuHeadings) {
@@ -474,9 +531,9 @@ export async function remarkMdToHTML(app: App, md: string) {
             }
         },
         // Obsidian callout语法支持
-        blockquote(state: any, node: any): Element {
+        blockquote(state: State, node: Blockquote): Element {
             // 如果不存在callout，说明是普通引用块，则返回原本结果
-            if (node?.data?.hProperties?.dataCallout === undefined) {
+            if (node.data?.hProperties?.dataCallout === undefined) {
                 return {
                     type: "element",
                     tagName: "blockquote",
@@ -490,7 +547,7 @@ export async function remarkMdToHTML(app: App, md: string) {
             // > [!ignore] Title
             // > some text
             const ignoreType = ["ignore", "忽略", "注释"];
-            if (ignoreType.includes(props.dataCalloutType)) {
+            if (ignoreType.includes(String(props.dataCalloutType))) {
                 return {
                     type: "element",
                     tagName: "p",
@@ -501,28 +558,35 @@ export async function remarkMdToHTML(app: App, md: string) {
 
             // 找到标题段落（带有 dataCalloutTitle）
             const titleParagraph = node.children.find(
-                (child: any) => child.data?.hProperties?.dataCalloutTitle,
+                (child) => child.data?.hProperties?.dataCalloutTitle,
             );
 
             // 提取标题文本
-            const titleText = titleParagraph?.children?.[0]?.value ?? "";
+            const titleChild =
+                titleParagraph && "children" in titleParagraph
+                    ? titleParagraph.children[0]
+                    : undefined;
+            const titleText =
+                titleChild && "value" in titleChild
+                    ? String(titleChild.value ?? "")
+                    : "";
 
             // 提取正文（去掉 title 节点和嵌套 blockquote）
             const contentNodes = node.children
-                .filter((child: any) => {
+                .filter((child) => {
                     const hName = child.data?.hName;
                     return (
                         hName !== "div" ||
                         !child.data?.hProperties?.dataCalloutTitle
                     );
                 })
-                .flatMap((child: any) => {
+                .flatMap((child) => {
                     // 若是嵌套 blockquote 包含 dataCalloutBody，取其子项
                     if (
                         child.type === "blockquote" &&
                         child.data?.hProperties?.dataCalloutBody
                     ) {
-                        return child.children ?? [];
+                        return child.children;
                     }
                     return [child];
                 });
@@ -538,13 +602,16 @@ export async function remarkMdToHTML(app: App, md: string) {
                         properties: {},
                         children: [u("text", titleText)],
                     },
-                    ...state.all({ children: contentNodes }),
+                    ...state.all({
+                        type: "root",
+                        children: contentNodes,
+                    }),
                 ],
             };
         },
         // 处理 obsidian 内链，如果内链是一篇知乎文章，则会提取链接和文件名作为知乎链接
         // 否则就是普通的下划线文字
-        wikiLink(state: any, node: WikiLinkNode): Element {
+        wikiLink(state: State, node: WikiLinkNode): Element {
             const name = node.value;
             const alias = node.data.alias;
             const alt = alias ? alias : name; // 一般来说`alias`都是存在的
@@ -557,7 +624,7 @@ export async function remarkMdToHTML(app: App, md: string) {
                 if (fm && fm["zhihu-link"]) {
                     const properties: { [key: string]: string } = {};
                     properties.href = fm["zhihu-link"];
-                    const source = String(state.options.file.value ?? "");
+                    const source = String(state.options.file?.value ?? "");
                     if (isNodeAloneInLine(node, source)) {
                         // 如果内链前没有任何内容，视为另起一行，做成card链接
                         properties["data-draft-node"] = "block";
@@ -581,13 +648,13 @@ export async function remarkMdToHTML(app: App, md: string) {
             };
         },
         // 如果是卡片链接，那么不需要被p标签包裹，否则在知乎卡片视图下会变成普通链接。
-        paragraph(state: any, node: any): Element | any[] {
+        paragraph(state: State, node: Paragraph): Element | Element[] {
             if (
                 node.children?.length === 1 &&
                 node.children[0]?.type === "link" &&
                 node.children[0]?.title === "card"
             ) {
-                return state.all(node)[0];
+                return state.all(node)[0] as Element;
             }
 
             return {
@@ -625,15 +692,19 @@ export async function remarkMdToHTML(app: App, md: string) {
 
     const htmlOutput = String(output);
     for (const reason of mathTableFallbacks) {
-        const message = reason === "size" ? locale.notice.mathTableTooLarge :
-            reason === "render" ? locale.notice.mathTableRenderFailed : locale.notice.mathTableKeptNative;
+        const message =
+            reason === "size"
+                ? locale.notice.mathTableTooLarge
+                : reason === "render"
+                  ? locale.notice.mathTableRenderFailed
+                  : locale.notice.mathTableKeptNative;
         new Notice(message, 10000);
     }
     console.log(htmlOutput);
     return htmlOutput;
 }
 // 检测node是否单独一行
-function isNodeAloneInLine(node: any, source: string): boolean {
+function isNodeAloneInLine(node: RenderNode, source: string): boolean {
     const pos = node.position;
     if (!pos?.start || !pos?.end) return false;
     const { start, end } = pos;
@@ -657,22 +728,26 @@ function getLinkText(node: Link): string {
 // 因为remark break不会将单独一行作为一个p标签，而是会用一个大的p标签包裹，加<br>
 // 但知乎是每一行都是被一个p标签包裹的
 function remarkSplitLinesToParagraphs() {
-    return (tree: any) => {
+    return (tree: Parent) => {
         visit(
             tree,
             "paragraph",
-            (node: any, index: number | undefined, parent: any) => {
+            (
+                node: RenderNode,
+                index: number | undefined,
+                parent: Parent | undefined,
+            ) => {
                 if (!parent || index === undefined) return;
 
-                const groups: any[][] = [[]];
+                const groups: RenderNode[][] = [[]];
 
-                for (const child of node.children) {
+                for (const child of node.children ?? []) {
                     if (child.type === "break") {
                         groups.push([]);
                         continue;
                     }
                     if (child.type === "text") {
-                        const parts = child.value.split(/\n/);
+                        const parts = (child.value ?? "").split(/\n/);
                         for (let i = 0; i < parts.length; i++) {
                             if (i > 0) groups.push([]);
                             if (parts[i]) {
@@ -706,27 +781,34 @@ function remarkSplitLinesToParagraphs() {
 
 // 去除多余的空行
 function rehypeRemoveBlockNewlines() {
-    return (tree: any) => {
-        visit(tree, (node: any, index: number | undefined, parent: any) => {
-            // 遇到代码块 <pre> 或 <code>，跳过其子节点的遍历，防止破坏代码格式
-            if (
-                node.type === "element" &&
-                (node.tagName === "pre" || node.tagName === "code")
-            ) {
-                return "skip";
-            }
+    return (tree: Parent) => {
+        visit(
+            tree,
+            (
+                node: RenderNode,
+                index: number | undefined,
+                parent: Parent | undefined,
+            ) => {
+                // 遇到代码块 <pre> 或 <code>，跳过其子节点的遍历，防止破坏代码格式
+                if (
+                    node.type === "element" &&
+                    (node.tagName === "pre" || node.tagName === "code")
+                ) {
+                    return "skip";
+                }
 
-            // 如果当前节点是单纯的换行符文本，且它不是代码块内部的内容，将其删除
-            if (
-                node.type === "text" &&
-                node.value === "\n" &&
-                parent &&
-                index !== undefined
-            ) {
-                parent.children.splice(index, 1);
-                // 返回当前索引，避免因为数组截断导致遍历跳过下一个节点
-                return index;
-            }
-        });
+                // 如果当前节点是单纯的换行符文本，且它不是代码块内部的内容，将其删除
+                if (
+                    node.type === "text" &&
+                    node.value === "\n" &&
+                    parent &&
+                    index !== undefined
+                ) {
+                    parent.children.splice(index, 1);
+                    // 返回当前索引，避免因为数组截断导致遍历跳过下一个节点
+                    return index;
+                }
+            },
+        );
     };
 }

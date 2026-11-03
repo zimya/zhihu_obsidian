@@ -4,7 +4,7 @@ import * as answer from "./answer_service";
 import * as login from "./login_service";
 
 import i18n, { type Lang } from "../locales";
-const locale = i18n.current;
+const locale: Lang = i18n.current;
 
 export function registerMenuCommands(plugin: Plugin) {
     const loginNoticeStr = locale.notice.notLogin;

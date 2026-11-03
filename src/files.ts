@@ -1,4 +1,4 @@
-import { App, Notice, FileSystemAdapter, TFile, normalizePath } from "obsidian";
+import { App, Notice, TFile, normalizePath } from "obsidian";
 import i18n, { type Lang } from "../locales";
 
 const locale: Lang = i18n.current;

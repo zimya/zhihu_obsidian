@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
 import clsx from "clsx";
 import Heading from "@theme/Heading";
+import publishImage from "@site/static/img/publish.png";
+import readImage from "@site/static/img/read.png";
+import uploadImage from "@site/static/img/upload.png";
 import styles from "./styles.module.css";
 
 type FeatureItem = {
@@ -12,7 +15,7 @@ type FeatureItem = {
 const FeatureList: FeatureItem[] = [
     {
         title: "发布文章或回答",
-        Img: require("@site/static/img/publish.png").default,
+        Img: publishImage,
         description: (
             <>
                 支持一切知乎富文本编辑器功能，让您可以轻松地在 Obsidian
@@ -22,7 +25,7 @@ const FeatureList: FeatureItem[] = [
     },
     {
         title: "浏览知乎",
-        Img: require("@site/static/img/read.png").default,
+        Img: readImage,
         description: (
             <>
                 浏览个性化推荐、关注和热榜。点击后一键生成markdown，再也不用担心知识的荒原。
@@ -31,7 +34,7 @@ const FeatureList: FeatureItem[] = [
     },
     {
         title: "轻松上传图片",
-        Img: require("@site/static/img/upload.png").default,
+        Img: uploadImage,
         description: (
             <>
                 插件支持一键上传图片资源，只需要提供图片链接，插件就自动完成剩下的部分。

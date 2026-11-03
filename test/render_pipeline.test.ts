@@ -16,7 +16,7 @@ buildSync({
     outfile: join(temporary, 'pipeline.cjs'), bundle: true, platform: 'node', format: 'cjs',
     alias: { obsidian: resolve('test/helpers/obsidian.ts') }, logLevel: 'silent',
 });
-(globalThis as any).window = { localStorage: { getItem: () => 'en' } };
+(globalThis as any).window = { localStorage: { getItem: () => 'en' }, setTimeout: globalThis.setTimeout.bind(globalThis), clearTimeout: globalThis.clearTimeout.bind(globalThis) };
 const { remarkMdToHTML, host } = createRequire(import.meta.url)(join(temporary, 'pipeline.cjs'));
 const valid = { status: 200, headers: { 'content-type': 'image/svg+xml' }, text: '<svg><path d="M0 0"/></svg>' };
 const mdTable = (row: string) => `| 数据 | 公式 |\n|---|---|\n${row}`;

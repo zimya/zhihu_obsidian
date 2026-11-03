@@ -1,5 +1,17 @@
-import { execFile } from "child_process";
 import { App, Notice, FuzzySuggestModal, TFolder } from "obsidian";
+
+export function imageFileName(source: string): string {
+    let pathname = source;
+    try {
+        const url = new URL(source);
+        if (url.protocol === "http:" || url.protocol === "https:") {
+            pathname = url.pathname;
+        }
+    } catch {
+        // Vault paths are not necessarily URLs.
+    }
+    return pathname.replace(/\/+$/, "").split("/").pop() ?? "";
+}
 
 type RequestOptions = {
     url: string;
@@ -49,16 +61,6 @@ export function fmtDate(date: Date): string {
     return `${year}-${month}-${day} ${hour}:${minute}`;
 }
 
-// 执行命令并等待
-export function execFileAsync(cmd: string, args: string[]) {
-    return new Promise<void>((resolve, reject) => {
-        execFile(cmd, args, (err) => {
-            if (err) reject(err);
-            else resolve();
-        });
-    });
-}
-
 export function isWebUrl(url: string): boolean {
     try {
         const parsed = new URL(url, "file://"); // 基于 file:// 解析相对路径
@@ -68,8 +70,17 @@ export function isWebUrl(url: string): boolean {
     }
 }
 
+interface ElectronDialog {
+    showOpenDialog(options: {
+        title: string;
+        properties: string[];
+    }): Promise<{ canceled: boolean; filePaths?: string[] }>;
+}
+
 export async function pickDirectoryDesktop(): Promise<string | null> {
-    let electron: any;
+    let electron:
+        | { remote?: { dialog?: ElectronDialog }; dialog?: ElectronDialog }
+        | undefined;
     try {
         // Obsidian 桌面端才能 require('electron')
         electron = require("electron");
@@ -127,8 +138,7 @@ export function toArrayBuffer(data: ArrayBuffer | Uint8Array): ArrayBuffer {
     if (data instanceof ArrayBuffer) {
         return data;
     }
-    return data.buffer.slice(
-        data.byteOffset,
-        data.byteOffset + data.byteLength,
-    ) as ArrayBuffer;
+    const copy = new Uint8Array(data.byteLength);
+    copy.set(data);
+    return copy.buffer;
 }

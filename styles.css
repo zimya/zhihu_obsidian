@@ -194,7 +194,7 @@
 
 /* cookies editor */
 .hidden {
-    display: none !important;
+    display: none;
 }
 
 .cookies-setting-area {
@@ -216,7 +216,7 @@
     border-radius: 4px;
     font-size: var(--font-inputs);
     height: 20em;
-    outline: none !important;
+    outline: none;
     text-align: left;
 }
 
@@ -247,8 +247,8 @@
 }
 
 .cookies-editor-validity-indicator svg {
-    width: 16px !important;
-    height: 16px !important;
+    width: 16px;
+    height: 16px;
 }
 
 .cookies-editor-validity-indicator:hover {
@@ -295,7 +295,7 @@
     border-radius: 4px;
     font-size: var(--font-inputs);
     height: 20em;
-    outline: none !important;
+    outline: none;
     text-align: left;
 }
 

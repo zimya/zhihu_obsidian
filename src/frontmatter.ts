@@ -34,13 +34,13 @@ export async function ensureZhihuFrontmatterTypes(vault: Vault): Promise<{
 
     try {
         const exists = await vault.adapter.exists(filePath);
-        let root: any = {};
+        let root: Record<string, unknown> = {};
         if (exists) {
             const raw = await vault.adapter.read(filePath);
-            const parsed: any = JSON.parse(raw);
+            const parsed: unknown = JSON.parse(raw);
             root =
                 parsed && typeof parsed === "object" && !Array.isArray(parsed)
-                    ? parsed
+                    ? (parsed as Record<string, unknown>)
                     : {};
         }
 

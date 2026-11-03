@@ -22,15 +22,15 @@ export async function validateEquation(
     request: () => Promise<EquationResponse>,
     timeoutMs = 10000,
 ): Promise<boolean> {
-    let timer: ReturnType<typeof setTimeout> | undefined;
+    let timer: number | undefined;
     try {
         return await Promise.race([
             request().then(isRenderedEquation),
-            new Promise<boolean>((resolve) => { timer = setTimeout(() => resolve(false), timeoutMs); }),
+            new Promise<boolean>((resolve) => { timer = window.setTimeout(() => resolve(false), timeoutMs); }),
         ]);
     } catch {
         return false;
     } finally {
-        if (timer !== undefined) clearTimeout(timer);
+        if (timer !== undefined) window.clearTimeout(timer);
     }
 }

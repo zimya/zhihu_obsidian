@@ -15,7 +15,7 @@ export default function DisclaimerTable() {
     const handleCopy = async (text: string) => {
         await navigator.clipboard.writeText(text);
         setCopied(text);
-        setTimeout(() => {
+        window.setTimeout(() => {
             setCopied((cur) => (cur === text ? null : cur));
         }, 1000);
     };

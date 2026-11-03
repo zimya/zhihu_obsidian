@@ -1,14 +1,19 @@
 import type { Element } from "hast";
 import { mathFromMarkdown, mathToMarkdown } from "mdast-util-math";
 import { math } from "micromark-extension-math";
+import type { Processor } from "unified";
 
 // Shared by the publisher and its regression tests, including the fork's
 // support for inline $$...$$ expressions.
-export function mathPlugin(this: any) {
-    const data = this.data();
-    (data.micromarkExtensions ||= []).push(math(this || {}));
+export function mathPlugin(this: Processor) {
+    const data = this.data() as unknown as {
+        micromarkExtensions?: ReturnType<typeof math>[];
+        fromMarkdownExtensions?: ReturnType<typeof mathFromMarkdown>[];
+        toMarkdownExtensions?: ReturnType<typeof mathToMarkdown>[];
+    };
+    (data.micromarkExtensions ||= []).push(math());
     (data.fromMarkdownExtensions ||= []).push(mathFromMarkdown());
-    (data.toMarkdownExtensions ||= []).push(mathToMarkdown(this || {}));
+    (data.toMarkdownExtensions ||= []).push(mathToMarkdown());
 }
 
 export function zhihuEquationUrl(eq: string): string {
