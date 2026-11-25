@@ -6,11 +6,10 @@ import * as render from "./custom_render";
 import { v4 as uuidv4 } from "uuid";
 import * as cookies from "./cookies";
 import * as imageService from "./image_service";
-import { normalizeStr } from "./utilities";
+import { normalizeStr, fmtDate, getAvailableMarkdownPath } from "./utilities";
 import { addPopularizeStr } from "./popularize";
 import { loadSettings } from "./settings";
 import i18n, { type Lang } from "../locales";
-import { fmtDate } from "./utilities";
 import { parseDisclaimer } from "./disclaimer";
 const locale: Lang = i18n.current;
 
@@ -144,16 +143,7 @@ export async function publishCurrentArticle(
 export async function createNewZhihuArticle(app: App) {
     const { vault, workspace, fileManager } = app;
 
-    let fileName = "untitled";
-    let filePath = `${fileName}.md`;
-    let counter = 1;
-
-    // 检查文件是否存在，如果存在则递增数字
-    while (vault.getAbstractFileByPath(filePath)) {
-        fileName = `untitled ${counter}`;
-        filePath = `${fileName}.md`;
-        counter++;
-    }
+    const filePath = getAvailableMarkdownPath(vault, "untitled");
 
     try {
         const settings = await loadSettings(vault);

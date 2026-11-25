@@ -1,4 +1,4 @@
-import { App, Notice, FuzzySuggestModal, TFolder } from "obsidian";
+import { App, Notice, FuzzySuggestModal, TFolder, Vault } from "obsidian";
 
 export function imageFileName(source: string): string {
     let pathname = source;
@@ -141,4 +141,25 @@ export function toArrayBuffer(data: ArrayBuffer | Uint8Array): ArrayBuffer {
     const copy = new Uint8Array(data.byteLength);
     copy.set(data);
     return copy.buffer;
+}
+
+/**
+ * Return the first available `<baseName>.md` or `<baseName> <n>.md` path in the vault,
+ * matching existing paths case-insensitively to avoid collisions on case-insensitive filesystems.
+ */
+export function getAvailableMarkdownPath(
+    vault: Pick<Vault, "getAllLoadedFiles">,
+    baseName = "untitled",
+): string {
+    const existingPaths = new Set(
+        vault.getAllLoadedFiles().map((file) => file.path.toLowerCase()),
+    );
+
+    let filePath = `${baseName}.md`;
+    let counter = 1;
+    while (existingPaths.has(filePath.toLowerCase())) {
+        filePath = `${baseName} ${counter}.md`;
+        counter++;
+    }
+    return filePath;
 }
